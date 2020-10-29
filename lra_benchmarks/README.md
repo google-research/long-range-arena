@@ -64,7 +64,7 @@ TODO: dehghani
 tay2020long,
 title={Long Range Arena : A Benchmark for Efficient Transformers },
 author={Yi Tay, Mostafa Dehghani, Samira Abnar, Yikang Shen, Dara Bahri,
-Phillip Pham, Jinfeng Rao, Liu Yang, Sebastian Ruder, Donald Metzler},
+Philip Pham, Jinfeng Rao, Liu Yang, Sebastian Ruder, Donald Metzler},
 booktitle={ArXiv Preprint},
 year={2020},
 url={},

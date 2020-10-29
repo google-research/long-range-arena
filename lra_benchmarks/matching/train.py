@@ -33,6 +33,10 @@ flags.DEFINE_string(
     'task_name', default='aan', help='Directory to store model data.')
 flags.DEFINE_string(
     'data_dir', default=None, help='Directory containing datasets.')
+flags.DEFINE_string(
+    'vocab_file_path',
+    default='/tmp/lra_data/aan',
+    help='Path for vocab file. Output of `build_vocab`.')
 
 
 @functools.partial(jax.jit, static_argnums=(1, 2, 3, 4))
@@ -137,7 +141,8 @@ def main(argv):
       batch_size=batch_size,
       fixed_vocab=None,
       max_length=max_length,
-      tokenizer=config.tokenizer)
+      tokenizer=config.tokenizer,
+      vocab_file_path=FLAGS.vocab_file_path)
 
   vocab_size = encoder.vocab_size
   logging.info('Vocab Size: %d', vocab_size)

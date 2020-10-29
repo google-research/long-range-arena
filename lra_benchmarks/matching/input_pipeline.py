@@ -63,7 +63,8 @@ def get_matching_datasets(n_devices,
                           batch_size=256,
                           fixed_vocab=None,
                           max_length=512,
-                          tokenizer='subword'):
+                          tokenizer='subword',
+                          vocab_file_path=None):
   """Get text matching classification datasets."""
   if batch_size % n_devices:
     raise ValueError("Batch size %d isn't divided evenly by n_devices %d" %
@@ -81,7 +82,8 @@ def get_matching_datasets(n_devices,
     encoder = tfds.deprecated.text.ByteTextEncoder()
   elif tokenizer == 'subword':
     logging.info('Building/loading subword tokenizer')
-    vocab_file_path = '/cns/el-d/home/yitay/lra_data/aan'
+    if vocab_file_path is None:
+      raise ValueError('tokenizer=subword requires vocab_file_path')
     if tf.io.gfile.exists(vocab_file_path + '.subwords'):
       logging.info('Found vocab..already exists. loading..')
       encoder = tfds.deprecated.text.SubwordTextEncoder.load_from_file(

@@ -8,6 +8,9 @@ from absl import logging
 import tensorflow.compat.v1 as tf
 import tensorflow_datasets as tfds
 
+flags.DEFINE_string('vocab_file_path', '/tmp/lra_data/aan',
+                    'Path for vocab file output.')
+
 FLAGS = flags.FLAGS
 DATASET_PATHS = '/tmp/dataset'
 
@@ -99,7 +102,7 @@ def main(argv):
   encoder = tfds.deprecated.text.SubwordTextEncoder.build_from_corpus(
       (en['Source1'].numpy() for en in train), target_vocab_size=2**13)
   vocab_file_path = '/cns/el-d/home/yitay/lra_data/aan'
-  encoder.save_to_file(vocab_file_path)
+  encoder.save_to_file(FLAGS.vocab_file_path)
   logging.info('Saved')
 
 
