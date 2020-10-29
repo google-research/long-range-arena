@@ -132,7 +132,7 @@ def to_value(t):
 
 
 def write_to_file(data, fp):
-  """Write to CNS outut."""
+  """Write to file output."""
   tf.logging.info(type(data))
   tf.logging.info('Writing {} samples to {}'.format(len(data), fp + '.tsv'))
   with tf.io.gfile.GFile(fp + '.tsv', 'w+') as f:

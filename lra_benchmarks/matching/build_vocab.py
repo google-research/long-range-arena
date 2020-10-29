@@ -101,7 +101,6 @@ def main(argv):
   logging.info('Building/loading subword tokenizer')
   encoder = tfds.deprecated.text.SubwordTextEncoder.build_from_corpus(
       (en['Source1'].numpy() for en in train), target_vocab_size=2**13)
-  vocab_file_path = '/cns/el-d/home/yitay/lra_data/aan'
   encoder.save_to_file(FLAGS.vocab_file_path)
   logging.info('Saved')
 
