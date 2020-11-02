@@ -55,7 +55,8 @@ because this task is already found in tensorflow datasets.
 
 ## Pathfinder
 
-TODO: dehghani
+Please see the ./data directory of how to use the datasets. We are 
+preparing the exact data splits for release at the moment.
 
 
 ## Citation

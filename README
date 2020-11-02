@@ -9,14 +9,7 @@ Long-range arena also implements different variants of Transformer models in
 [JAX](https://github.com/google/jax), using
 [Flax](https://github.com/google/flax).
 
+This release includes the benchmarks for the paper "Long Range Arena: A
+benchmark for Efficient Transformers.
 
-### Models
-* Transformer (standard)
-* Reformer
-* Synthesizer (https://arxiv.org/abs/2005.00743)
 
-### Datasets / Benchmarks
-* LM1B
-* WMT
-
-TODO: Add project structure to the Readme.
