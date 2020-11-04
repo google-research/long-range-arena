@@ -1,11 +1,10 @@
 # Long Range Arena (LRA)
- 
+
 There have been a dizzying number of efficient Transformers proposed recently.
-We present a framework and benchmark for systematically evaluating long-range 
-Transformer  models. Not only are our tasks inherently difficult, they 
-are also capability probing and tests for insight on a particular type 
-of data structure, e.g., hierarchical structures, logical reasoning or 
-spatial reasoning. 
+We present a framework and benchmark for systematically evaluating long-range
+Transformer models. Not only are our tasks inherently difficult, they are also
+capability probing and tests for insight on a particular type of data structure,
+e.g., hierarchical structures, logical reasoning or spatial reasoning.
 
 # Example Usage
 
@@ -22,16 +21,17 @@ PYTHONPATH="$(pwd)":"$PYTHON_PATH" python lra_benchmarks/listops/train.py \
 
 ## Dataset Setup
 
-This section describes the methods to obtain the datasets and run the tasks
-in LRA. While some of the tasks already come nicely packaged in Tensorflow
+This section describes the methods to obtain the datasets and run the tasks in
+LRA. While some of the tasks already come nicely packaged in Tensorflow
 datasets. we are still waiting on approval for releasing certain explicit
-splits. 
+splits.
 
 ### ListOps
 
 This task can be found at `/listops`. We are still pending approval for
-releasing the split used in our paper and will keep this updated.
-To generate your own split, run the following comment:
+releasing the split used in our paper and will keep this updated. To generate
+your own split, run the following comment:
+
 ```
 PYTHONPATH="$(pwd)":"$PYTHON_PATH" python lra_benchmarks/data/listops.py -- \
   --output_dir=$HOME/lra_data/listops/
@@ -39,28 +39,27 @@ PYTHONPATH="$(pwd)":"$PYTHON_PATH" python lra_benchmarks/data/listops.py -- \
 
 ### Text Classification
 
-This task can be found at `/text_classification`. No action is required
-because this task is already found in tensorflow datasets.
+This task can be found at `/text_classification`. No action is required because
+this task is already found in tensorflow datasets.
 
 ### Document Retrieval
 
-Please download the dataset at (http://aan.how/download/). We are still
-pending approval for releasing the splits for these datasets and will
-keep this updated.
+Please download the dataset at (http://aan.how/download/). We are still pending
+approval for releasing the splits for these datasets and will keep this updated.
 
 ## Pixel-level Image Classification
 
-This task can be found at `/image`. No action is required
-because this task is already found in tensorflow datasets.
+This task can be found at `/image`. No action is required because this task is
+already found in tensorflow datasets.
 
 ## Pathfinder
 
-Please see the ./data directory of how to use the datasets. We are 
-preparing the exact data splits for release at the moment.
-
+Please see the ./data directory of how to use the datasets. We are preparing the
+exact data splits for release at the moment.
 
 ## Citation
 
+```
 @inproceedings{
 tay2020long,
 title={Long Range Arena : A Benchmark for Efficient Transformers },
@@ -71,8 +70,8 @@ year={2020},
 url={},
 note={under review}
 }
+```
 
+## Disclaimer
 
-
-
-
+This is not an official Google product.
