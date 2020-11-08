@@ -22,7 +22,28 @@ import tensorflow_datasets as tfds
 
 
 class Pathfinder32(tfds.core.BeamBasedBuilder):
-  """Pathfinder TFDS builder (where the resolution is 32)."""
+  """Pathfinder TFDS builder (where the resolution is 32).
+
+  The data for this dataset was generated using the script in
+  https://github.com/drewlinsley/pathfinder with the default parameters, while
+  followings being customized:
+  ```
+    args.paddle_margin_list = [1]
+    args.window_size = [32, 32]
+    args.padding= 1
+    args.paddle_length = 2
+    args.marker_radius = 1.5
+    args.contour_length = 14
+    args.paddle_thickness = 0.5
+    args.antialias_scale = 2
+    args.seed_distance= 7
+    args.continuity = 1.0
+    args.distractor_length = args.contour_length // 3
+    args.num_distractor_snakes = 20 // args.distractor_length
+    args.snake_contrast_list = [2]
+    args.paddle_contrast_list = [0.75]
+  ```
+  """
 
   VERSION = tfds.core.Version('1.0.0')
 
@@ -89,7 +110,27 @@ class Pathfinder32(tfds.core.BeamBasedBuilder):
 
 
 class Pathfinder64(tfds.core.BeamBasedBuilder):
-  """Pathfinder TFDS builder (where the resolution is 32)."""
+  """Pathfinder TFDS builder (where the resolution is 64).
+
+  The data for this dataset was generated using the script in
+  https://github.com/drewlinsley/pathfinder with the default parameters, while
+  followings being customized:
+  ```
+    args.padding = 1
+    args.antialias_scale = 4
+    args.paddle_margin_list = [1]
+    args.seed_distance = 12
+    args.window_size = [64,64]
+    args.marker_radius = 2.5
+    args.contour_length = 14
+    args.paddle_thickness = 1
+    args.antialias_scale = 2
+    args.continuity = 1.8  # from 1.8 to 0.8, with steps of 66%
+    args.distractor_length = args.contour_length / 3
+    args.num_distractor_snakes = 22 / args.distractor_length
+    args.snake_contrast_list = [0.8]
+  ```
+  """
 
   VERSION = tfds.core.Version('1.0.0')
 
@@ -156,7 +197,27 @@ class Pathfinder64(tfds.core.BeamBasedBuilder):
 
 
 class Pathfinder128(tfds.core.BeamBasedBuilder):
-  """Pathfinder TFDS builder (where the resolution is 32)."""
+  """Pathfinder TFDS builder (where the resolution is 128).
+
+  The data for this dataset was generated using the script in
+  https://github.com/drewlinsley/pathfinder with the default parameters, while
+  followings being customized:
+  ```
+    args.padding = 1
+    args.antialias_scale = 4
+    args.paddle_margin_list = [2,3]
+    args.seed_distance = 20
+    args.window_size = [128,128]
+    args.marker_radius = 3
+    args.contour_length = 14
+    args.paddle_thickness = 1.5
+    args.antialias_scale = 2
+    args.continuity = 1.8  # from 1.8 to 0.8, with steps of 66%
+    args.distractor_length = args.contour_length / 3
+    args.num_distractor_snakes = 35 / args.distractor_length
+    args.snake_contrast_list = [0.9]
+  ```
+  """
 
   VERSION = tfds.core.Version('1.0.0')
 
@@ -223,7 +284,25 @@ class Pathfinder128(tfds.core.BeamBasedBuilder):
 
 
 class Pathfinder256(tfds.core.BeamBasedBuilder):
-  """Pathfinder TFDS builder (where the resolution is 32)."""
+  """Pathfinder TFDS builder (where the resolution is 256).
+
+  The data for this dataset was generated using the script in
+  https://github.com/drewlinsley/pathfinder with the default parameters, while
+  followings being customized:
+  ```
+    args.antialias_scale = 4
+    args.paddle_margin_list = [3]
+    args.window_size = [256,256]
+    args.marker_radius = 5
+    args.contour_length = 14
+    args.paddle_thickness = 2
+    args.antialias_scale = 2
+    args.continuity = 1.8
+    args.distractor_length = args.contour_length / 3
+    args.num_distractor_snakes = 30 / args.distractor_length
+    args.snake_contrast_list = [1.0]
+  ```
+  """
 
   VERSION = tfds.core.Version('1.0.0')
 
