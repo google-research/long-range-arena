@@ -53,13 +53,19 @@ flags.DEFINE_string(
 CLASS_MAP = {'imdb_reviews': 2}
 
 
-@functools.partial(jax.jit, static_argnums=(1, 2, 3))
 def create_model(key, flax_module, input_shape, model_kwargs):
-  module = flax_module.partial(**model_kwargs)
-  with nn.stochastic(key):
-    _, initial_params = module.init_by_shape(key, [(input_shape, jnp.float32)])
-    model = nn.Model(module, initial_params)
-  return model
+  """Creates and initializes the model."""
+
+  @functools.partial(jax.jit, backend='cpu')
+  def _create_model(key):
+    module = flax_module.partial(**model_kwargs)
+    with nn.stochastic(key):
+      _, initial_params = module.init_by_shape(key,
+                                               [(input_shape, jnp.float32)])
+      model = nn.Model(module, initial_params)
+    return model
+
+  return _create_model(key)
 
 
 def create_optimizer(model, learning_rate, weight_decay):

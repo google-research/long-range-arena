@@ -53,14 +53,20 @@ flags.DEFINE_string(
     help='Path for vocab file. Output of `build_vocab`.')
 
 
-@functools.partial(jax.jit, static_argnums=(1, 2, 3, 4))
 def create_model(key, flax_module, input1_shape, input2_shape, model_kwargs):
-  module = flax_module.partial(**model_kwargs)
-  with nn.stochastic(key):
-    _, initial_params = module.init_by_shape(key, [(input1_shape, jnp.float32),
-                                                   (input2_shape, jnp.float32)])
-    model = nn.Model(module, initial_params)
-  return model
+  """Creates and initializes the model."""
+
+  @functools.partial(jax.jit, backend='cpu')
+  def _create_model(key):
+    module = flax_module.partial(**model_kwargs)
+    with nn.stochastic(key):
+      _, initial_params = module.init_by_shape(key,
+                                               [(input1_shape, jnp.float32),
+                                                (input2_shape, jnp.float32)])
+      model = nn.Model(module, initial_params)
+    return model
+
+  return _create_model(key)
 
 
 def create_optimizer(model, learning_rate, weight_decay):

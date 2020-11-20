@@ -46,16 +46,20 @@ flags.DEFINE_string(
 flags.DEFINE_string('task_name', default='mnist', help='Name of the task')
 
 
-@functools.partial(jax.jit, static_argnums=(1, 2, 3))
 def create_model(key, flax_module, input_shape, model_kwargs):
-  """Creates and initializes the mode."""
-  module = flax_module.partial(**model_kwargs)
-  with nn.stateful() as init_state:
-    with nn.stochastic(key):
-      _, initial_params = module.init_by_shape(key,
-                                               [(input_shape, jnp.float32)])
-      model = nn.Model(module, initial_params)
-  return model, init_state
+  """Creates and initializes the model."""
+
+  @functools.partial(jax.jit, backend='cpu')
+  def _create_model(key):
+    module = flax_module.partial(**model_kwargs)
+    with nn.stateful() as init_state:
+      with nn.stochastic(key):
+        _, initial_params = module.init_by_shape(key,
+                                                 [(input_shape, jnp.float32)])
+        model = nn.Model(module, initial_params)
+    return model, init_state
+
+  return _create_model(key)
 
 
 def create_optimizer(model, learning_rate, weight_decay):
