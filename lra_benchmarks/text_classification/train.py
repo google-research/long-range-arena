@@ -296,7 +296,7 @@ def main(argv):
       metrics_all = []
 
       # Eval Metrics
-      eval_summary = run_eval(eval_ds)
+      eval_summary = run_eval(eval_ds, num_eval_steps)
       logging.info('eval in step: %d, loss: %.4f, acc: %.4f', step,
                    eval_summary['loss'], eval_summary['accuracy'])
       if jax.host_id() == 0:
