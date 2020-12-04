@@ -198,7 +198,7 @@ def test(optimizer, state, p_eval_step, step, test_ds, summary_writer, model_dir
       summary_writer.scalar(f'test_{key}', val, step)
     summary_writer.flush()
   with open(os.path.join(model_dir, 'results.json'), 'w') as f:
-      json.dump(test_summary, f)
+      json.dump(jax.tree_map(lambda x: x.tolist(), test_summary), f)
 
 
 def train_loop(config, dropout_rngs, eval_ds, eval_freq, num_eval_steps,

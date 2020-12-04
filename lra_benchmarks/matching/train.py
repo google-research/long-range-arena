@@ -251,7 +251,8 @@ def main(argv):
 
   if FLAGS.test_only:
     with open(os.path.join(FLAGS.model_dir, 'results.json'), 'w') as f:
-      json.dump(run_eval(test_ds), f)
+      test_summary = run_eval(test_ds)
+      json.dump(jax.tree_map(lambda x: x.tolist(), test_summary), f)
     return
 
   metrics_all = []
