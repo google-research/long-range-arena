@@ -15,6 +15,7 @@
 """Main training script for the image classification task."""
 import functools
 import itertools
+import json
 import os
 import time
 
@@ -44,6 +45,8 @@ config_flags.DEFINE_config_file(
 flags.DEFINE_string(
     'model_dir', default=None, help='Directory to store model data.')
 flags.DEFINE_string('task_name', default='mnist', help='Name of the task')
+flags.DEFINE_bool(
+    'eval_only', default=False, help='Run the evaluation on the test data.')
 
 
 def create_model(key, flax_module, input_shape, model_kwargs):
@@ -160,7 +163,7 @@ def eval_step(model, state, batch, num_classes, flatten_input=True):
   return compute_metrics(logits, targets, num_classes, weights=None)
 
 
-def test(optimizer, state, p_eval_step, step, test_ds, summary_writer):
+def test(optimizer, state, p_eval_step, step, test_ds, summary_writer, model_dir):
   """Test the flax module in optimizer on test_ds.
 
   Args:
@@ -170,6 +173,7 @@ def test(optimizer, state, p_eval_step, step, test_ds, summary_writer):
     step: int; Number of training steps passed so far.
     test_ds: tf.dataset; Test dataset.
     summary_writer: tensorflow summary writer.
+    model_dir: model directory.
   """
   # Test Metrics
   test_metrics = []
@@ -193,6 +197,8 @@ def test(optimizer, state, p_eval_step, step, test_ds, summary_writer):
     for key, val in test_summary.items():
       summary_writer.scalar(f'test_{key}', val, step)
     summary_writer.flush()
+  with open(os.path.join(model_dir, 'results.json'), 'w') as f:
+      json.dump(test_summary, f)
 
 
 def train_loop(config, dropout_rngs, eval_ds, eval_freq, num_eval_steps,
@@ -405,7 +411,8 @@ def main(argv):
 
   logging.info('Starting testing')
   logging.info('====================')
-  test(optimizer, state, p_eval_step, step, test_ds, summary_writer)
+  test(optimizer, state, p_eval_step, step, test_ds, summary_writer,
+       FLAGS.model_dir)
 
 
 if __name__ == '__main__':

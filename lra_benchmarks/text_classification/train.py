@@ -15,6 +15,7 @@
 """Document Classification tasks."""
 import functools
 import itertools
+import json
 import os
 import time
 
@@ -49,6 +50,8 @@ flags.DEFINE_string(
     help='Directory to store model data.')
 flags.DEFINE_string(
     'data_dir', default=None, help='Directory containing datasets.')
+flags.DEFINE_bool(
+    'test_only', default=False, help='Run the evaluation on the test data.')
 
 CLASS_MAP = {'imdb_reviews': 2}
 
@@ -200,7 +203,7 @@ def main(argv):
       model, learning_rate, weight_decay=FLAGS.config.weight_decay)
   del model  # Don't keep a copy of the initial model.
   start_step = 0
-  if config.restore_checkpoints:
+  if config.restore_checkpoints or FLAGS.test_only:
     # Restore unreplicated optimizer + model state from last checkpoint.
     optimizer = checkpoints.restore_checkpoint(FLAGS.model_dir, optimizer)
     # Grab last step.
@@ -218,6 +221,36 @@ def main(argv):
       axis_name='batch')
   p_eval_step = jax.pmap(eval_step, axis_name='batch')
   # p_pred_step = jax.pmap(predict_step, axis_name='batch')
+
+  def run_eval(eval_ds, num_eval_steps=-1):
+    eval_metrics = []
+    eval_iter = iter(eval_ds)
+    if num_eval_steps == -1:
+      num_iter = itertools.count()
+    else:
+      num_iter = range(num_eval_steps)
+    for _, eval_batch in zip(num_iter, eval_iter):
+      # pylint: disable=protected-access
+      eval_batch = common_utils.shard(
+          jax.tree_map(lambda x: x._numpy(), eval_batch))
+      # pylint: enable=protected-access
+      metrics = p_eval_step(optimizer.target, eval_batch)
+      eval_metrics.append(metrics)
+    eval_metrics = common_utils.get_metrics(eval_metrics)
+    eval_metrics_sums = jax.tree_map(jnp.sum, eval_metrics)
+    eval_denominator = eval_metrics_sums.pop('denominator')
+    eval_summary = jax.tree_map(
+        lambda x: x / eval_denominator,  # pylint: disable=cell-var-from-loop
+        eval_metrics_sums)
+    # Calculate (clipped) perplexity after averaging log-perplexities:
+    eval_summary['perplexity'] = jnp.clip(
+        jnp.exp(eval_summary['loss']), a_max=1.0e4)
+    return eval_summary
+
+  if FLAGS.test_only:
+    with open(os.path.join(FLAGS.model_dir, 'results.json'), 'w') as f:
+      json.dump(run_eval(test_ds), f)
+    return
 
   metrics_all = []
   tick = time.time()
@@ -263,28 +296,7 @@ def main(argv):
       metrics_all = []
 
       # Eval Metrics
-      eval_metrics = []
-      eval_iter = iter(eval_ds)
-      if num_eval_steps == -1:
-        num_iter = itertools.repeat(1)
-      else:
-        num_iter = range(num_eval_steps)
-      for _, eval_batch in zip(num_iter, eval_iter):
-        # pylint: disable=protected-access
-        eval_batch = common_utils.shard(
-            jax.tree_map(lambda x: x._numpy(), eval_batch))
-        # pylint: enable=protected-access
-        metrics = p_eval_step(optimizer.target, eval_batch)
-        eval_metrics.append(metrics)
-      eval_metrics = common_utils.get_metrics(eval_metrics)
-      eval_metrics_sums = jax.tree_map(jnp.sum, eval_metrics)
-      eval_denominator = eval_metrics_sums.pop('denominator')
-      eval_summary = jax.tree_map(
-          lambda x: x / eval_denominator,  # pylint: disable=cell-var-from-loop
-          eval_metrics_sums)
-      # Calculate (clipped) perplexity after averaging log-perplexities:
-      eval_summary['perplexity'] = jnp.clip(
-          jnp.exp(eval_summary['loss']), a_max=1.0e4)
+      eval_summary = run_eval(eval_ds)
       logging.info('eval in step: %d, loss: %.4f, acc: %.4f', step,
                    eval_summary['loss'], eval_summary['accuracy'])
       if jax.host_id() == 0:
