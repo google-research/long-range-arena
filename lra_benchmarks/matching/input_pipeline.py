@@ -14,6 +14,8 @@
 
 """Input pipeline for the imdb dataset."""
 
+import os
+
 from absl import logging
 import tensorflow.compat.v1 as tf
 import tensorflow_datasets as tfds
@@ -45,11 +47,11 @@ def get_tsv_dataset(file_path, batch_size):
   return ds
 
 
-def get_dataset(batch_size):
+def get_dataset(batch_size, data_path):
   """Get dataset from matching datasets converts into src/tgt pairs."""
-  train_fps = DATASET_PATHS + '.train.tsv'
-  valid_fps = DATASET_PATHS + '.eval.tsv'
-  test_fps = DATASET_PATHS + '.test.tsv'
+  train_fps = data_path + '.train.tsv'
+  valid_fps = data_path + '.eval.tsv'
+  test_fps = data_path + '.test.tsv'
   train = get_tsv_dataset(train_fps, batch_size)
   valid = get_tsv_dataset(valid_fps, batch_size)
   test = get_tsv_dataset(test_fps, batch_size)
@@ -84,10 +86,14 @@ def get_matching_datasets(n_devices,
     raise ValueError("Batch size %d isn't divided evenly by n_devices %d" %
                      (batch_size, n_devices))
 
-  del data_dir  # not used now but will be used later.
   del task_name  # not used but may be used in the future.
 
-  train_dataset, val_dataset, test_dataset = get_dataset(batch_size)
+  if data_dir is None:
+    data_path = DATASET_PATHS
+  else:
+    data_path = os.path.join(data_dir, 'new_aan_pairs')
+
+  train_dataset, val_dataset, test_dataset = get_dataset(batch_size, data_path)
 
   tf.logging.info('Finished getting dataset.')
 
