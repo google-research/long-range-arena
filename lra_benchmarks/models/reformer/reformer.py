@@ -11,14 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Transformer model."""
+"""Reformer language models."""
 from flax import nn
 import jax.numpy as jnp
 from lra_benchmarks.models.layers import common_layers
+from lra_benchmarks.models.reformer import reformer_attention
 
 
-class TransformerBlock(nn.Module):
-  """Transformer layer (https://openreview.net/forum?id=H1e5GJBtDr)."""
+class ReformerBlock(nn.Module):
+  """Reformer layer."""
 
   def apply(self,
             inputs,
@@ -26,23 +27,23 @@ class TransformerBlock(nn.Module):
             mlp_dim,
             num_heads,
             dtype=jnp.float32,
-            inputs_segmentation=None,
             causal_mask=False,
+            inputs_segmentation=None,
             padding_mask=None,
             dropout_rate=0.1,
             attention_dropout_rate=0.1,
             deterministic=False,
             cache=None):
-    """Applies TransformerBlock module.
+    """Applies ReformerBlock module.
 
     Args:
       inputs: input data
       qkv_dim: dimension of the query/key/value
       mlp_dim: dimension of the mlp on top of attention block
       num_heads: number of heads
-      dtype: the dtype of the computation (default: float32).
-      inputs_segmentation: input segmentation info for packed examples.
+      dtype: dtype of model
       causal_mask: bool, mask future or not
+      inputs_segmentation: inputs segmentation for packed tasks.
       padding_mask: bool, mask padding tokens
       dropout_rate: dropout rate
       attention_dropout_rate: dropout rate for attention weights
@@ -57,14 +58,11 @@ class TransformerBlock(nn.Module):
     # Attention block.
     assert inputs.ndim == 3
     x = nn.LayerNorm(inputs)
-    x = nn.SelfAttention(
+    x = reformer_attention.ReformerSelfAttention(
         x,
         num_heads=num_heads,
-        dtype=dtype,
         qkv_features=qkv_dim,
-        attention_axis=(1,),
         causal_mask=causal_mask,
-        segmentation=inputs_segmentation,
         padding_mask=padding_mask,
         kernel_init=nn.initializers.xavier_uniform(),
         bias_init=nn.initializers.normal(stddev=1e-6),
@@ -81,15 +79,14 @@ class TransformerBlock(nn.Module):
     y = common_layers.MlpBlock(
         y,
         mlp_dim=mlp_dim,
-        dtype=dtype,
         dropout_rate=dropout_rate,
         deterministic=deterministic)
 
     return x + y
 
 
-class TransformerEncoder(nn.Module):
-  """Transformer Model Encoder."""
+class ReformerEncoder(nn.Module):
+  """Reformer Model Encoder."""
 
   def apply(self,
             inputs,
@@ -111,9 +108,8 @@ class TransformerEncoder(nn.Module):
             learn_pos_emb=False,
             classifier=False,
             classifier_pool='CLS',
-            num_classes=10,
-            tied_weights=False):
-    """Applies Transformer model on the inputs.
+            num_classes=10):
+    """Applies Reformer model on the inputs.
 
     Args:
       inputs: input data
@@ -137,7 +133,6 @@ class TransformerEncoder(nn.Module):
       classifier: boolean, for classification mode (output N-class logits)
       classifier_pool: str, supports "MEAN", "MAX" pooling.
       num_classes: int, number of classification classes.
-      tied_weights: bool, to tie weights or not.
 
     Returns:
       output of a transformer encoder or logits if classifier_mode is true.
@@ -182,8 +177,9 @@ class TransformerEncoder(nn.Module):
       dtype = jnp.float32
 
     # Input Encoder
-    if tied_weights:
-      encoder = TransformerBlock.shared(
+    for lyr in range(num_layers):
+      x = ReformerBlock(
+          x,
           qkv_dim=qkv_dim,
           mlp_dim=mlp_dim,
           num_heads=num_heads,
@@ -193,24 +189,7 @@ class TransformerEncoder(nn.Module):
           dropout_rate=dropout_rate,
           attention_dropout_rate=attention_dropout_rate,
           deterministic=not train,
-          name='encoderblock')
-      for _ in range(num_layers):
-        x = encoder(x)
-    else:
-      for lyr in range(num_layers):
-        x = TransformerBlock(
-            x,
-            qkv_dim=qkv_dim,
-            mlp_dim=mlp_dim,
-            num_heads=num_heads,
-            dtype=dtype,
-            padding_mask=src_padding_mask,
-            inputs_segmentation=inputs_segmentation,
-            dropout_rate=dropout_rate,
-            attention_dropout_rate=attention_dropout_rate,
-            deterministic=not train,
-            name=f'encoderblock_{lyr}')
-
+          name=f'encoderblock_{lyr}')
     encoded = nn.LayerNorm(x, dtype=dtype, name='encoder_norm')
 
     if classifier:
@@ -219,8 +198,8 @@ class TransformerEncoder(nn.Module):
     return encoded
 
 
-class TransformerDualEncoder(nn.Module):
-  """Transformer Model for Matching (dual encoding) tasks."""
+class ReformerDualEncoder(nn.Module):
+  """Reformer Model for Matching (dual encoding) tasks."""
 
   def apply(self,
             inputs1,
@@ -271,13 +250,14 @@ class TransformerDualEncoder(nn.Module):
       classifier: boolean, to use classifier.
       classifier_pool: str, supports "MEAN", "MAX" pooling.
       num_classes: int, number of classification classes.
-      interaction: str, supports "NLI"
+      interaction: str
 
     Returns:
       output of a transformer decoder.
     """
-
-    encoder = TransformerEncoder.shared(
+    encoder = ReformerEncoder.shared(
+        inputs_positions=inputs1_positions,
+        inputs_segmentation=inputs1_segmentation,
         vocab_size=vocab_size,
         use_bfloat16=use_bfloat16,
         emb_dim=emb_dim,
@@ -290,14 +270,8 @@ class TransformerDualEncoder(nn.Module):
         dropout_rate=dropout_rate,
         attention_dropout_rate=attention_dropout_rate,
         name='encoder')
-    inputs1_encoded = encoder(
-        inputs=inputs1,
-        inputs_positions=inputs1_positions,
-        inputs_segmentation=inputs1_segmentation)
-    inputs2_encoded = encoder(
-        inputs=inputs2,
-        inputs_positions=inputs2_positions,
-        inputs_segmentation=inputs2_segmentation)
+    inputs1_encoded = encoder(inputs1)
+    inputs2_encoded = encoder(inputs2)
 
     encoded = common_layers.classifier_head_dual(
         inputs1_encoded,
@@ -308,3 +282,77 @@ class TransformerDualEncoder(nn.Module):
         interaction=interaction)
 
     return encoded
+
+
+class ReformerDecoder(nn.Module):
+  """Reformer Model for language modeling."""
+
+  def apply(self,
+            inputs,
+            vocab_size,
+            emb_dim=512,
+            num_heads=8,
+            num_layers=6,
+            qkv_dim=512,
+            mlp_dim=2048,
+            max_len=2048,
+            train=False,
+            shift=True,
+            dropout_rate=0.1,
+            attention_dropout_rate=0.1,
+            cache=None):
+    """Applies Reformer model on the inputs.
+
+    Args:
+      inputs: input data
+      vocab_size: size of the vocabulary
+      emb_dim: dimension of embedding
+      num_heads: number of heads
+      num_layers: number of layers
+      qkv_dim: dimension of the query/key/value
+      mlp_dim: dimension of the mlp on top of attention block
+      max_len: maximum length.
+      train: bool: if model is training.
+      shift: bool: if we right-shift input - this is only disabled for
+        fast, looped single-token autoregressive decoding.
+      dropout_rate: dropout rate
+      attention_dropout_rate: dropout rate for attention weights
+      cache: flax autoregressive cache for fast decoding.
+
+    Returns:
+      output of a reformer decoder.
+    """
+    padding_mask = jnp.where(inputs > 0, 1, 0).astype(jnp.float32)[..., None]
+    assert inputs.ndim == 2  # (batch, len)
+    x = inputs
+    if shift:
+      x = common_layers.shift_right(x)
+    x = x.astype('int32')
+    x = common_layers.Embed(
+        x, num_embeddings=vocab_size, features=emb_dim, name='embed')
+    x = common_layers.AddPositionEmbs(
+        x,
+        max_len=max_len,
+        posemb_init=common_layers.sinusoidal_init(max_len=max_len),
+        cache=cache)
+    x = nn.dropout(x, rate=dropout_rate, deterministic=not train)
+    for _ in range(num_layers):
+      x = ReformerBlock(
+          x,
+          qkv_dim=qkv_dim,
+          mlp_dim=mlp_dim,
+          num_heads=num_heads,
+          causal_mask=True,
+          padding_mask=padding_mask,
+          dropout_rate=dropout_rate,
+          attention_dropout_rate=attention_dropout_rate,
+          deterministic=not train,
+          cache=cache,
+      )
+    x = nn.LayerNorm(x)
+    logits = nn.Dense(
+        x,
+        vocab_size,
+        kernel_init=nn.initializers.xavier_uniform(),
+        bias_init=nn.initializers.normal(stddev=1e-6))
+    return logits

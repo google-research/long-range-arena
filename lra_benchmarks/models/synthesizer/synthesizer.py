@@ -11,14 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Transformer model."""
+"""Synthesizer models."""
 from flax import nn
 import jax.numpy as jnp
 from lra_benchmarks.models.layers import common_layers
+from lra_benchmarks.models.synthesizer import synthesizer_attention
 
 
-class TransformerBlock(nn.Module):
-  """Transformer layer (https://openreview.net/forum?id=H1e5GJBtDr)."""
+class SynthesizerBlock(nn.Module):
+  """Synthesizer layer."""
 
   def apply(self,
             inputs,
@@ -32,15 +33,18 @@ class TransformerBlock(nn.Module):
             dropout_rate=0.1,
             attention_dropout_rate=0.1,
             deterministic=False,
-            cache=None):
-    """Applies TransformerBlock module.
+            cache=None,
+            max_length=512,
+            ignore_dot_product=False,
+            synthesizer_mode='random'):
+    """Applies SynthesizerBlock module.
 
     Args:
       inputs: input data
       qkv_dim: dimension of the query/key/value
       mlp_dim: dimension of the mlp on top of attention block
       num_heads: number of heads
-      dtype: the dtype of the computation (default: float32).
+      dtype: dtype
       inputs_segmentation: input segmentation info for packed examples.
       causal_mask: bool, mask future or not
       padding_mask: bool, mask padding tokens
@@ -48,6 +52,9 @@ class TransformerBlock(nn.Module):
       attention_dropout_rate: dropout rate for attention weights
       deterministic: bool, deterministic or not (to apply dropout)
       cache: flax autoregressive cache for fast decoding.
+      max_length: int, the maximum supported sequence length.
+      ignore_dot_product: bool, to ignore the dot product attention or not.
+      synthesizer_mode: str support 'dense' and 'random' or 'dense+random'
 
     Returns:
       output after transformer block.
@@ -57,14 +64,12 @@ class TransformerBlock(nn.Module):
     # Attention block.
     assert inputs.ndim == 3
     x = nn.LayerNorm(inputs)
-    x = nn.SelfAttention(
+    x = synthesizer_attention.SynthesizerSelfAttention(
         x,
         num_heads=num_heads,
-        dtype=dtype,
         qkv_features=qkv_dim,
         attention_axis=(1,),
         causal_mask=causal_mask,
-        segmentation=inputs_segmentation,
         padding_mask=padding_mask,
         kernel_init=nn.initializers.xavier_uniform(),
         bias_init=nn.initializers.normal(stddev=1e-6),
@@ -72,7 +77,10 @@ class TransformerBlock(nn.Module):
         broadcast_dropout=False,
         dropout_rate=attention_dropout_rate,
         deterministic=deterministic,
-        cache=cache)
+        cache=cache,
+        max_length=max_length,
+        ignore_dot_product=ignore_dot_product,
+        synthesizer_mode=synthesizer_mode)
     x = nn.dropout(x, rate=dropout_rate, deterministic=deterministic)
     x = x + inputs
 
@@ -81,15 +89,14 @@ class TransformerBlock(nn.Module):
     y = common_layers.MlpBlock(
         y,
         mlp_dim=mlp_dim,
-        dtype=dtype,
         dropout_rate=dropout_rate,
         deterministic=deterministic)
 
     return x + y
 
 
-class TransformerEncoder(nn.Module):
-  """Transformer Model Encoder."""
+class SynthesizerEncoder(nn.Module):
+  """Synthesizer Model Encoder."""
 
   def apply(self,
             inputs,
@@ -100,7 +107,6 @@ class TransformerEncoder(nn.Module):
             use_bfloat16=False,
             emb_dim=512,
             num_heads=8,
-            dtype=jnp.float32,
             num_layers=6,
             qkv_dim=512,
             mlp_dim=2048,
@@ -108,12 +114,15 @@ class TransformerEncoder(nn.Module):
             train=True,
             dropout_rate=0.1,
             attention_dropout_rate=0.1,
+            ignore_dot_product=False,
+            synthesizer_mode='random',
             learn_pos_emb=False,
             classifier=False,
             classifier_pool='CLS',
             num_classes=10,
-            tied_weights=False):
-    """Applies Transformer model on the inputs.
+            tied_weights=False,
+            k=32):
+    """Applies Synthesizer model on the inputs.
 
     Args:
       inputs: input data
@@ -124,7 +133,6 @@ class TransformerEncoder(nn.Module):
       use_bfloat16: bool: whether use bfloat16.
       emb_dim: dimension of embedding
       num_heads: number of heads
-      dtype: the dtype of the computation (default: float32)
       num_layers: number of layers
       qkv_dim: dimension of the query/key/value
       mlp_dim: dimension of the mlp on top of attention block
@@ -132,15 +140,18 @@ class TransformerEncoder(nn.Module):
       train: if it is training,
       dropout_rate: dropout rate
       attention_dropout_rate: dropout rate for attention weights
+      ignore_dot_product: bool, to ignore the dot product attention or not.
+      synthesizer_mode: str support 'dense' and 'random' or 'dense+random'
       learn_pos_emb: boolean, if learn the positional embedding or use the
         sinusoidal positional embedding.
       classifier: boolean, for classification mode (output N-class logits)
       classifier_pool: str, supports "MEAN", "MAX" pooling.
       num_classes: int, number of classification classes.
-      tied_weights: bool, to tie weights or not.
+      tied_weights: boolean
+      k: int
 
     Returns:
-      output of a transformer encoder or logits if classifier_mode is true.
+      output of a transformer encoder.
     """
     assert inputs.ndim == 2  # (batch, len)
 
@@ -183,7 +194,7 @@ class TransformerEncoder(nn.Module):
 
     # Input Encoder
     if tied_weights:
-      encoder = TransformerBlock.shared(
+      encoder = SynthesizerBlock.shared(
           qkv_dim=qkv_dim,
           mlp_dim=mlp_dim,
           num_heads=num_heads,
@@ -193,12 +204,15 @@ class TransformerEncoder(nn.Module):
           dropout_rate=dropout_rate,
           attention_dropout_rate=attention_dropout_rate,
           deterministic=not train,
-          name='encoderblock')
-      for _ in range(num_layers):
+          name='encoderblock',
+          max_length=max_len,
+          ignore_dot_product=ignore_dot_product,
+          synthesizer_mode=synthesizer_mode)
+      for lyr in range(num_layers):
         x = encoder(x)
     else:
       for lyr in range(num_layers):
-        x = TransformerBlock(
+        x = SynthesizerBlock(
             x,
             qkv_dim=qkv_dim,
             mlp_dim=mlp_dim,
@@ -209,18 +223,22 @@ class TransformerEncoder(nn.Module):
             dropout_rate=dropout_rate,
             attention_dropout_rate=attention_dropout_rate,
             deterministic=not train,
-            name=f'encoderblock_{lyr}')
+            name=f'encoderblock_{lyr}',
+            max_length=max_len,
+            ignore_dot_product=ignore_dot_product,
+            synthesizer_mode=synthesizer_mode)
 
     encoded = nn.LayerNorm(x, dtype=dtype, name='encoder_norm')
 
     if classifier:
       encoded = common_layers.classifier_head(
           encoded, num_classes, mlp_dim, pooling_mode=classifier_pool)
+
     return encoded
 
 
-class TransformerDualEncoder(nn.Module):
-  """Transformer Model for Matching (dual encoding) tasks."""
+class SynthesizerDualEncoder(nn.Module):
+  """Synthesizer Model for Matching (dual encoding) tasks."""
 
   def apply(self,
             inputs1,
@@ -243,7 +261,8 @@ class TransformerDualEncoder(nn.Module):
             classifier=True,
             classifier_pool='CLS',
             num_classes=2,
-            interaction=None):
+            interaction=None,
+            tied_weights=False):
     """Applies Transformer model on text similarity.
 
     A deliberate choice to distinguish this from NLI because
@@ -271,13 +290,15 @@ class TransformerDualEncoder(nn.Module):
       classifier: boolean, to use classifier.
       classifier_pool: str, supports "MEAN", "MAX" pooling.
       num_classes: int, number of classification classes.
-      interaction: str, supports "NLI"
+      interaction: string
+      tied_weights: boolean
 
     Returns:
       output of a transformer decoder.
     """
-
-    encoder = TransformerEncoder.shared(
+    encoder = SynthesizerEncoder.shared(
+        inputs_positions=inputs1_positions,
+        inputs_segmentation=inputs1_segmentation,
         vocab_size=vocab_size,
         use_bfloat16=use_bfloat16,
         emb_dim=emb_dim,
@@ -289,15 +310,10 @@ class TransformerDualEncoder(nn.Module):
         train=train,
         dropout_rate=dropout_rate,
         attention_dropout_rate=attention_dropout_rate,
-        name='encoder')
-    inputs1_encoded = encoder(
-        inputs=inputs1,
-        inputs_positions=inputs1_positions,
-        inputs_segmentation=inputs1_segmentation)
-    inputs2_encoded = encoder(
-        inputs=inputs2,
-        inputs_positions=inputs2_positions,
-        inputs_segmentation=inputs2_segmentation)
+        name='encoder',
+        tied_weights=tied_weights)
+    inputs1_encoded = encoder(inputs1)
+    inputs2_encoded = encoder(inputs2)
 
     encoded = common_layers.classifier_head_dual(
         inputs1_encoded,
@@ -308,3 +324,85 @@ class TransformerDualEncoder(nn.Module):
         interaction=interaction)
 
     return encoded
+
+
+class SynthesizerDecoder(nn.Module):
+  """Synthesizer Decoder."""
+
+  def apply(self,
+            inputs,
+            vocab_size,
+            emb_dim=512,
+            num_heads=8,
+            num_layers=6,
+            qkv_dim=512,
+            mlp_dim=2048,
+            max_len=2048,
+            train=False,
+            shift=True,
+            dropout_rate=0.1,
+            attention_dropout_rate=0.1,
+            cache=None,
+            max_length=512,
+            ignore_dot_product=False,
+            synthesizer_mode='random'):
+    """Applies Synthesizer model on the inputs.
+
+    Args:
+      inputs: input data
+      vocab_size: size of the vocabulary
+      emb_dim: dimension of embedding
+      num_heads: number of heads
+      num_layers: number of layers
+      qkv_dim: dimension of the query/key/value
+      mlp_dim: dimension of the mlp on top of attention block
+      max_len: maximum length.
+      train: bool: if model is training.
+      shift: bool: if we right-shift input - this is only disabled for
+        fast, looped single-token autoregressive decoding.
+      dropout_rate: dropout rate
+      attention_dropout_rate: dropout rate for attention weights
+      cache: flax autoregressive cache for fast decoding.
+      max_length: int, the maximum supported sequence length.
+      ignore_dot_product: bool, to ignore the dot product attention or not.
+      synthesizer_mode: str support 'dense' and 'random' or 'dense+random'
+
+    Returns:
+      output of a transformer decoder.
+    """
+    padding_mask = jnp.where(inputs > 0, 1, 0).astype(jnp.float32)[..., None]
+    assert inputs.ndim == 2  # (batch, len)
+    x = inputs
+    if shift:
+      x = common_layers.shift_right(x)
+    x = x.astype('int32')
+    x = common_layers.Embed(
+        x, num_embeddings=vocab_size, features=emb_dim, name='embed')
+    x = common_layers.AddPositionEmbs(
+        x,
+        max_len=max_len,
+        posemb_init=common_layers.sinusoidal_init(max_len=max_len),
+        cache=cache)
+    x = nn.dropout(x, rate=dropout_rate, deterministic=not train)
+    for _ in range(num_layers):
+      x = SynthesizerBlock(
+          x,
+          qkv_dim=qkv_dim,
+          mlp_dim=mlp_dim,
+          num_heads=num_heads,
+          causal_mask=True,
+          padding_mask=padding_mask,
+          dropout_rate=dropout_rate,
+          attention_dropout_rate=attention_dropout_rate,
+          deterministic=not train,
+          cache=cache,
+          max_length=max_length,
+          ignore_dot_product=ignore_dot_product,
+          synthesizer_mode=synthesizer_mode)
+    x = nn.LayerNorm(x)
+    logits = nn.Dense(
+        x,
+        vocab_size,
+        kernel_init=nn.initializers.xavier_uniform(),
+        bias_init=nn.initializers.normal(stddev=1e-6))
+    return logits

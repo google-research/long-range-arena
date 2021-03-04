@@ -11,59 +11,63 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Transformer model."""
+"""Longformer modules."""
 from flax import nn
 import jax.numpy as jnp
 from lra_benchmarks.models.layers import common_layers
+from lra_benchmarks.models.longformer import longformer_attention
 
 
-class TransformerBlock(nn.Module):
-  """Transformer layer (https://openreview.net/forum?id=H1e5GJBtDr)."""
+class LongformerBlock(nn.Module):
+  """Longformer Layer."""
 
   def apply(self,
             inputs,
             qkv_dim,
             mlp_dim,
             num_heads,
+            sliding_window_size=512,
+            global_mask=None,
+            causal_mask=False,
             dtype=jnp.float32,
             inputs_segmentation=None,
-            causal_mask=False,
             padding_mask=None,
             dropout_rate=0.1,
             attention_dropout_rate=0.1,
-            deterministic=False,
-            cache=None):
-    """Applies TransformerBlock module.
+            deterministic=False):
+    """Applies the LongformerBlock module.
 
     Args:
-      inputs: input data
-      qkv_dim: dimension of the query/key/value
-      mlp_dim: dimension of the mlp on top of attention block
-      num_heads: number of heads
+      inputs: input data of size `[bs, seq_len, features]`.
+      qkv_dim: dimension of the query/key/value.
+      mlp_dim: dimension of the mlp on top of attention block.
+      num_heads: number of attention heads.
+      sliding_window_size: size of sliding window attention to use.
+      global_mask: boolean matrix of shape `[bs, seq_len]`, where `True`
+        indicates that the position is globally attended. By default, no global
+        attention is used.
+      causal_mask: If true, apply causal attention mask.
       dtype: the dtype of the computation (default: float32).
       inputs_segmentation: input segmentation info for packed examples.
-      causal_mask: bool, mask future or not
-      padding_mask: bool, mask padding tokens
+      padding_mask: bool, mask padding tokens.
       dropout_rate: dropout rate
       attention_dropout_rate: dropout rate for attention weights
-      deterministic: bool, deterministic or not (to apply dropout)
-      cache: flax autoregressive cache for fast decoding.
+      deterministic: if true, apply dropout else don't.
 
     Returns:
-      output after transformer block.
-
+      output of shape `[bs, seq_len, mlp_dim]`.
     """
 
-    # Attention block.
     assert inputs.ndim == 3
     x = nn.LayerNorm(inputs)
-    x = nn.SelfAttention(
+    x = longformer_attention.LongformerSelfAttention(
         x,
         num_heads=num_heads,
-        dtype=dtype,
         qkv_features=qkv_dim,
-        attention_axis=(1,),
+        sliding_window_size=sliding_window_size,
+        global_mask=global_mask,
         causal_mask=causal_mask,
+        dtype=dtype,
         segmentation=inputs_segmentation,
         padding_mask=padding_mask,
         kernel_init=nn.initializers.xavier_uniform(),
@@ -71,12 +75,10 @@ class TransformerBlock(nn.Module):
         bias=False,
         broadcast_dropout=False,
         dropout_rate=attention_dropout_rate,
-        deterministic=deterministic,
-        cache=cache)
+        deterministic=deterministic)
     x = nn.dropout(x, rate=dropout_rate, deterministic=deterministic)
     x = x + inputs
 
-    # MLP block.
     y = nn.LayerNorm(x)
     y = common_layers.MlpBlock(
         y,
@@ -88,12 +90,15 @@ class TransformerBlock(nn.Module):
     return x + y
 
 
-class TransformerEncoder(nn.Module):
-  """Transformer Model Encoder."""
+class LongformerEncoder(nn.Module):
+  """Longformer Encoder."""
 
   def apply(self,
             inputs,
             vocab_size,
+            sliding_window_size=512,
+            global_mask=None,
+            causal_mask=False,
             inputs_positions=None,
             inputs_segmentation=None,
             shared_embedding=None,
@@ -111,13 +116,17 @@ class TransformerEncoder(nn.Module):
             learn_pos_emb=False,
             classifier=False,
             classifier_pool='CLS',
-            num_classes=10,
-            tied_weights=False):
-    """Applies Transformer model on the inputs.
+            num_classes=10):
+    """Applies Longformer model on the inputs.
 
     Args:
-      inputs: input data
-      vocab_size: size of the vocabulary
+      inputs: input data.
+      vocab_size: size of the vocabulary.
+      sliding_window_size: size of sliding window attention to use.
+      global_mask: boolean matrix of shape `[bs, seq_len]`, where `True`
+        indicates that the position is globally attended. By default, no global
+        attention is used.
+      causal_mask: If true, apply causal attention masking.
       inputs_positions: input subsequence positions for packed examples.
       inputs_segmentation: input segmentation info for packed examples.
       shared_embedding: a shared embedding layer to use.
@@ -137,10 +146,9 @@ class TransformerEncoder(nn.Module):
       classifier: boolean, for classification mode (output N-class logits)
       classifier_pool: str, supports "MEAN", "MAX" pooling.
       num_classes: int, number of classification classes.
-      tied_weights: bool, to tie weights or not.
 
     Returns:
-      output of a transformer encoder or logits if classifier_mode is true.
+      output of the encoder or logits if classifier_mode is true.
     """
     assert inputs.ndim == 2  # (batch, len)
 
@@ -182,35 +190,22 @@ class TransformerEncoder(nn.Module):
       dtype = jnp.float32
 
     # Input Encoder
-    if tied_weights:
-      encoder = TransformerBlock.shared(
+    for lyr in range(num_layers):
+      x = LongformerBlock(
+          x,
           qkv_dim=qkv_dim,
           mlp_dim=mlp_dim,
           num_heads=num_heads,
+          sliding_window_size=sliding_window_size,
+          global_mask=global_mask,
+          causal_mask=causal_mask,
           dtype=dtype,
-          padding_mask=src_padding_mask,
           inputs_segmentation=inputs_segmentation,
+          padding_mask=src_padding_mask,
           dropout_rate=dropout_rate,
           attention_dropout_rate=attention_dropout_rate,
           deterministic=not train,
-          name='encoderblock')
-      for _ in range(num_layers):
-        x = encoder(x)
-    else:
-      for lyr in range(num_layers):
-        x = TransformerBlock(
-            x,
-            qkv_dim=qkv_dim,
-            mlp_dim=mlp_dim,
-            num_heads=num_heads,
-            dtype=dtype,
-            padding_mask=src_padding_mask,
-            inputs_segmentation=inputs_segmentation,
-            dropout_rate=dropout_rate,
-            attention_dropout_rate=attention_dropout_rate,
-            deterministic=not train,
-            name=f'encoderblock_{lyr}')
-
+          name=f'encoderblock_{lyr}')
     encoded = nn.LayerNorm(x, dtype=dtype, name='encoder_norm')
 
     if classifier:
@@ -219,8 +214,8 @@ class TransformerEncoder(nn.Module):
     return encoded
 
 
-class TransformerDualEncoder(nn.Module):
-  """Transformer Model for Matching (dual encoding) tasks."""
+class LongformerDualEncoder(nn.Module):
+  """Longformer Model for Matching (dual encoding) tasks."""
 
   def apply(self,
             inputs1,
@@ -243,7 +238,8 @@ class TransformerDualEncoder(nn.Module):
             classifier=True,
             classifier_pool='CLS',
             num_classes=2,
-            interaction=None):
+            interaction=None
+            ):
     """Applies Transformer model on text similarity.
 
     A deliberate choice to distinguish this from NLI because
@@ -271,13 +267,14 @@ class TransformerDualEncoder(nn.Module):
       classifier: boolean, to use classifier.
       classifier_pool: str, supports "MEAN", "MAX" pooling.
       num_classes: int, number of classification classes.
-      interaction: str, supports "NLI"
+      interaction: str
 
     Returns:
       output of a transformer decoder.
     """
-
-    encoder = TransformerEncoder.shared(
+    encoder = LongformerEncoder.shared(
+        inputs_positions=inputs1_positions,
+        inputs_segmentation=inputs1_segmentation,
         vocab_size=vocab_size,
         use_bfloat16=use_bfloat16,
         emb_dim=emb_dim,
@@ -290,14 +287,8 @@ class TransformerDualEncoder(nn.Module):
         dropout_rate=dropout_rate,
         attention_dropout_rate=attention_dropout_rate,
         name='encoder')
-    inputs1_encoded = encoder(
-        inputs=inputs1,
-        inputs_positions=inputs1_positions,
-        inputs_segmentation=inputs1_segmentation)
-    inputs2_encoded = encoder(
-        inputs=inputs2,
-        inputs_positions=inputs2_positions,
-        inputs_segmentation=inputs2_segmentation)
+    inputs1_encoded = encoder(inputs1)
+    inputs2_encoded = encoder(inputs2)
 
     encoded = common_layers.classifier_head_dual(
         inputs1_encoded,
@@ -308,3 +299,85 @@ class TransformerDualEncoder(nn.Module):
         interaction=interaction)
 
     return encoded
+
+
+class LongformerDecoder(nn.Module):
+  """Longformer Decoder."""
+
+  def apply(self,
+            inputs,
+            vocab_size,
+            sliding_window_size=512,
+            global_mask=None,
+            emb_dim=512,
+            num_heads=8,
+            dtype=jnp.float32,
+            num_layers=6,
+            qkv_dim=512,
+            mlp_dim=2048,
+            max_len=2048,
+            train=False,
+            shift=True,
+            dropout_rate=0.1,
+            attention_dropout_rate=0.1):
+    """Applies Longformer model on the inputs, using causal masking.
+
+    Args:
+      inputs: input data
+      vocab_size: size of the vocabulary
+      sliding_window_size: size of sliding window attention to use.
+      global_mask: boolean matrix of shape `[bs, seq_len]`, where `True`
+        indicates that the position is globally attended. By default, no global
+        attention is used.
+      emb_dim: dimension of embedding
+      num_heads: number of heads
+      dtype: the dtype of the computation (default: float32)
+      num_layers: number of layers
+      qkv_dim: dimension of the query/key/value
+      mlp_dim: dimension of the mlp on top of attention block
+      max_len: maximum length.
+      train: bool: if model is training.
+      shift: bool: if we right-shift input - this is only disabled for
+        fast, looped single-token autoregressive decoding.
+      dropout_rate: dropout rate
+      attention_dropout_rate: dropout rate for attention weights
+
+    Returns:
+      output of a transformer decoder.
+    """
+    padding_mask = jnp.where(inputs > 0, 1, 0).astype(jnp.float32)[..., None]
+    assert inputs.ndim == 2  # (batch, len)
+    x = inputs
+    if shift:
+      x = common_layers.shift_right(x)
+    x = x.astype('int32')
+    x = common_layers.Embed(
+        x, num_embeddings=vocab_size, features=emb_dim, name='embed')
+    x = common_layers.AddPositionEmbs(
+        x,
+        max_len=max_len,
+        posemb_init=common_layers.sinusoidal_init(max_len=max_len),
+        cache=None)
+    x = nn.dropout(x, rate=dropout_rate, deterministic=not train)
+    for _ in range(num_layers):
+      x = LongformerBlock(
+          x,
+          qkv_dim=qkv_dim,
+          mlp_dim=mlp_dim,
+          num_heads=num_heads,
+          sliding_window_size=sliding_window_size,
+          global_mask=global_mask,
+          causal_mask=True,
+          padding_mask=padding_mask,
+          dropout_rate=dropout_rate,
+          attention_dropout_rate=attention_dropout_rate,
+          deterministic=not train,
+          cache=None,
+      )
+    x = nn.LayerNorm(x)
+    logits = nn.Dense(
+        x,
+        vocab_size,
+        kernel_init=nn.initializers.xavier_uniform(),
+        bias_init=nn.initializers.normal(stddev=1e-6))
+    return logits
