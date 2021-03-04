@@ -17,8 +17,17 @@ import numpy as np
 
 import tensorflow.compat.v1 as tf
 import tensorflow_datasets as tfds
+import tensorflow_text as text
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
+
+
+def rename_close_brackets(x):
+  source = x['Source']
+  source = tf.strings.regex_replace(source, ']', 'X')
+  source = tf.strings.regex_replace(source, r'\(', '')
+  source = tf.strings.regex_replace(source, r'\)', '')
+  return {'Source': source, 'Target': x['Target']}
 
 
 def preprocess_dataset(file_path, batch_size):
@@ -34,6 +43,11 @@ def preprocess_dataset(file_path, batch_size):
                                              header=True,
                                              num_epochs=1)
   ds = ds.unbatch()
+  # we rename close brackets to X for this particular task because
+  # tokenizer removes non alphanumeric.
+  # since there is no trivial way to change this behaviour
+  # we opt for an equivalent fix since the vocab in listops is fixed.
+  ds = ds.map(rename_close_brackets, num_parallel_calls=AUTOTUNE)
   return ds
 
 
@@ -41,7 +55,7 @@ def get_datasets(n_devices,
                  task_name,
                  data_dir=None,
                  batch_size=256,
-                 max_length=512):
+                 max_length=2000):
   """Get algorithmic datasets."""
   if batch_size % n_devices:
     raise ValueError("Batch size %d isn't divided evenly by n_devices %d" %
@@ -59,12 +73,14 @@ def get_datasets(n_devices,
   tf.logging.info('Building vocab')
   # build vocab
   vocab_set = set()
-  tokenizer = tfds.deprecated.text.Tokenizer()
+  tokenizer = text.WhitespaceTokenizer()
 
-  for i, data in enumerate(train_dataset):
+  lengths = []
+  for i, data in enumerate(val_dataset):
     examples = data['Source']
     examples = tokenizer.tokenize(examples.numpy())
     examples = np.reshape(examples, (-1)).tolist()
+    lengths.append(len(examples))
     vocab_set.update(examples)
     if i % 1000 == 0:
       tf.logging.info('Processed {}'.format(i))
@@ -73,20 +89,19 @@ def get_datasets(n_devices,
   vocab_set = list(set(vocab_set))
   tf.logging.info('Finished processing vocab size={}'.format(len(vocab_set)))
 
-  encoder = tfds.deprecated.text.TokenTextEncoder(vocab_set)
+  encoder = tfds.deprecated.text.TokenTextEncoder(
+      vocab_set)
 
   def tf_encode(x):
-    result = tf.py_function(lambda s: tf.constant(encoder.encode(s.numpy())), [
-        x,
-    ], tf.int32)
+    result = tf.py_function(lambda s: tf.constant(encoder.encode(s.numpy())),
+                            [x,],
+                            tf.int32)
     result.set_shape([None])
     return result
 
   def tokenize(d):
-    return {
-        'inputs': tf_encode(d['Source'])[:max_length],
-        'targets': d['Target']
-    }
+    return {'inputs': tf_encode(d['Source'])[:max_length],
+            'targets': d['Target']}
 
   train_dataset = train_dataset.map(tokenize, num_parallel_calls=AUTOTUNE)
   val_dataset = val_dataset.map(tokenize, num_parallel_calls=AUTOTUNE)
@@ -104,3 +119,22 @@ def get_datasets(n_devices,
   test_dataset = test_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
   return train_dataset, val_dataset, test_dataset, encoder
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
