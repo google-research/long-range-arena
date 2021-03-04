@@ -11,15 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Configuration and hyperparameter sweeps."""
 
-from lra_benchmarks.image.configs.pathfinder64 import base_pathfinder64_config
+from lra_benchmarks.listops.configs import base_listops_config
+from ml_collections import config_dict
 
 
 def get_config():
   """Get the default hyperparameter configuration."""
-  config = base_pathfinder64_config.get_config()
+  config = base_listops_config.get_config()
   config.model_type = "performer"
+  config.model_kwargs = config_dict.create(
+      attention_fn_cls="softmax",
+      attention_fn_kwargs=config_dict.create(ortho_scaling=0.0, nb_features=2))
   return config
 
 

@@ -13,14 +13,75 @@
 # limitations under the License.
 """This contains utility functions for model training and evaluation."""
 
-import functools
-
 from flax import nn
-from flax import optim
 from flax.training import common_utils
-import jax
 import jax.numpy as jnp
+from lra_benchmarks.models.bigbird import bigbird
+from lra_benchmarks.models.linear_transformer import linear_transformer
+from lra_benchmarks.models.linformer import linformer
+from lra_benchmarks.models.local import local
+from lra_benchmarks.models.longformer import longformer
+from lra_benchmarks.models.performer import performer
+from lra_benchmarks.models.reformer import reformer
+from lra_benchmarks.models.sinkhorn_transformer import sinkhorn_transformer
+from lra_benchmarks.models.sparse_transformer import sparse_attention
+from lra_benchmarks.models.sparse_transformer import sparse_transformer
+from lra_benchmarks.models.synthesizer import synthesizer
+from lra_benchmarks.models.transformer import transformer
 import numpy as onp
+
+
+def get_model(model_type, create_model_fn, model_kwargs, *create_model_args):
+  """Create and initialize the model.
+
+  Args:
+    model_type: str; Type of Transformer model to create.
+    create_model_fn: fn: Function that is used for creating the model.
+    model_kwargs: keyword argument to the model.
+    *create_model_args: positional argument to the create_model_args.
+
+  Returns:
+    Initialized model.
+  """
+  if model_type == 'transformer':
+    return create_model_fn(transformer.TransformerEncoder, model_kwargs,
+                           *create_model_args)
+  elif model_type == 'synthesizer':
+    return create_model_fn(synthesizer.SynthesizerEncoder, model_kwargs,
+                           *create_model_args)
+  elif model_type == 'reformer':
+    return create_model_fn(reformer.ReformerEncoder, model_kwargs,
+                           *create_model_args)
+  elif model_type == 'performer':
+    return create_model_fn(performer.PerformerEncoder, model_kwargs,
+                           *create_model_args)
+  elif model_type == 'linformer':
+    return create_model_fn(linformer.LinformerEncoder, model_kwargs,
+                           *create_model_args)
+  elif model_type == 'local':
+    return create_model_fn(local.LocalTransformerEncoder, model_kwargs,
+                           *create_model_args)
+  elif model_type == 'bigbird':
+    return create_model_fn(bigbird.BigBirdEncoder, model_kwargs,
+                           *create_model_args)
+  elif model_type == 'sinkhorn':
+    return create_model_fn(sinkhorn_transformer.SinkhornTransformerEncoder,
+                           model_kwargs, *create_model_args)
+  elif model_type == 'linear_transformer':
+    return create_model_fn(linear_transformer.LinearTransformerEncoder,
+                           model_kwargs, *create_model_args)
+  elif model_type == 'sparse_transformer':
+    model_kwargs['attention_patterns'] = [
+        sparse_attention.Fixed1Pattern(block_size=50),
+        sparse_attention.Fixed2Pattern(block_size=50, c=10)
+    ]
+    return create_model_fn(sparse_transformer.SparseTransformerEncoder,
+                           model_kwargs, *create_model_args)
+  elif model_type == 'longformer':
+    return create_model_fn(longformer.LongformerEncoder, model_kwargs,
+                           *create_model_args)
+  else:
+    raise ValueError('Model type not supported')
 
 
 def create_learning_rate_scheduler(
@@ -79,29 +140,6 @@ def create_learning_rate_scheduler(
     return jnp.asarray(ret, dtype=jnp.float32)
 
   return step_fn
-
-
-def create_model(key, flax_module, input_shape, target_shape, model_kwargs):
-  """Creates and initializes the model."""
-
-  @functools.partial(jax.jit, backend='cpu')
-  def _create_model(key):
-    model_def = flax_module.partial(**model_kwargs)
-    with nn.attention.Cache().mutate() as cache_def:
-      _, initial_params = model_def.init_by_shape(
-          key, [(input_shape, jnp.float32), (target_shape, jnp.float32)],
-          cache=cache_def)
-      model = nn.Model(model_def, initial_params)
-    return model, cache_def
-
-  return _create_model(key)
-
-
-def create_optimizer(model, learning_rate, weight_decay):
-  optimizer_def = optim.Adam(
-      learning_rate, beta1=0.9, beta2=0.98, eps=1e-9, weight_decay=weight_decay)
-  optimizer = optimizer_def.create(model)
-  return optimizer
 
 
 def compute_weighted_cross_entropy(logits, targets, num_classes, weights=None):

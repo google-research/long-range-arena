@@ -32,11 +32,11 @@ from jax import random
 import jax.nn
 import jax.numpy as jnp
 from lra_benchmarks.listops import input_pipeline
-from lra_benchmarks.models.transformer import transformer
 from lra_benchmarks.utils import train_utils
 from ml_collections import config_flags
 import numpy as np
 import tensorflow.compat.v2 as tf
+
 
 FLAGS = flags.FLAGS
 
@@ -54,7 +54,7 @@ flags.DEFINE_bool(
     'test_only', default=False, help='Run the evaluation on the test data.')
 
 
-def create_model(key, flax_module, input_shape, model_kwargs):
+def create_model(flax_module, model_kwargs, key, input_shape):
   """Creates and initializes the model."""
 
   @functools.partial(jax.jit, backend='cpu')
@@ -196,11 +196,8 @@ def main(argv):
   # the main pmap'd training update for performance.
   dropout_rngs = random.split(rng, jax.local_device_count())
 
-  if model_type == 'transformer':
-    model = create_model(init_rng, transformer.TransformerEncoder, input_shape,
-                         model_kwargs)
-  else:
-    raise ValueError('Model type not supported')
+  model = train_utils.get_model(model_type, create_model, model_kwargs,
+                                init_rng, input_shape)
 
   optimizer = create_optimizer(model, learning_rate)
   del model  # Don't keep a copy of the initial model.

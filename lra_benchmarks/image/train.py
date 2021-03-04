@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Main training script for the image classification task."""
+
 import functools
 import itertools
 import json
@@ -32,10 +34,11 @@ from jax import random
 import jax.nn
 import jax.numpy as jnp
 from lra_benchmarks.image import task_registry
-from lra_benchmarks.models.transformer import transformer
 from lra_benchmarks.utils import train_utils
+
 from ml_collections import config_flags
 import tensorflow.compat.v2 as tf
+
 
 FLAGS = flags.FLAGS
 
@@ -48,7 +51,7 @@ flags.DEFINE_bool(
     'eval_only', default=False, help='Run the evaluation on the test data.')
 
 
-def create_model(key, flax_module, input_shape, model_kwargs):
+def create_model(flax_module, model_kwargs, key, input_shape):
   """Creates and initializes the model."""
 
   @functools.partial(jax.jit, backend='cpu')
@@ -83,25 +86,6 @@ def compute_metrics(logits, labels, num_classes, weights):
   }
   metrics = jax.lax.psum(metrics, 'batch')
   return metrics
-
-
-def get_model(init_rng, input_shape, model_type, model_kwargs):
-  """Create and initialize the model.
-
-  Args:
-    init_rng: float; Jax PRNG key.
-    input_shape: tuple; Tuple indicating input shape.
-    model_type: str; Type of Transformer model to create.
-    model_kwargs: keyword argument to the model.
-
-  Returns:
-    Initialized model.
-  """
-  if model_type == 'transformer':
-    return create_model(init_rng, transformer.TransformerEncoder, input_shape,
-                        model_kwargs)
-  else:
-    raise ValueError('Model type not supported')
 
 
 def train_step(optimizer,
@@ -365,7 +349,8 @@ def main(argv):
   # the main pmap'd training update for performance.
   dropout_rngs = random.split(rng, jax.local_device_count())
 
-  model, state = get_model(init_rng, input_shape, model_type, model_kwargs)
+  model, state = train_utils.get_model(model_type, create_model, model_kwargs,
+                                       init_rng, input_shape)
 
   optimizer = create_optimizer(model, learning_rate, config.weight_decay)
   del model  # Don't keep a copy of the initial model.

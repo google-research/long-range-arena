@@ -11,14 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Configuration and hyperparameter sweeps."""
 
-from lra_benchmarks.image.configs.pathfinder64 import base_pathfinder64_config
+from lra_benchmarks.listops.configs import base_listops_config
 
 
 def get_config():
-  """Get the hyperparameter configuration."""
-  config = base_pathfinder64_config.get_config()
+  """Get the default hyperparameter configuration."""
+  config = base_listops_config.get_config()
   config.model_type = "reformer"
   return config
 
