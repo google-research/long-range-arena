@@ -554,7 +554,7 @@ class BigBirdAttention(nn.Module):
             i=cache_entry.i + one, key=key, value=value)
         cache.store(cache_entry)
 
-        # TODO: verify this is still needed in translation decoding.
+        # TODO(levskaya): verify this is still needed in translation decoding.
         key_padding_mask = jnp.broadcast_to(
             (jnp.arange(cshape[1]) < cache_entry.i), cshape[:2])
         key_padding_mask = key_padding_mask.astype(jnp.float32)[..., None]

@@ -196,7 +196,7 @@ class SinkhornTransformerEncoder(nn.Module):
         encoded = jnp.mean(encoded, axis=1)
         encoded = nn.Dense(encoded, num_classes, name='logits')
       else:
-        # TODO: Add other pooling methods.
+        # TODO(yitay): Add other pooling methods.
         raise ValueError('Pooling method not supported yet.')
     return encoded
 

@@ -308,7 +308,7 @@ class LinearTransformerSeq2SeqBlock(nn.Module):
             cache=None):
     """Applies TransformerSeq2Seq module.
 
-    TODO: add autoregresive decoder
+    TODO(lra/dehghani): add autoregresive decoder
     Currently we use the dcoder from the standard TransformerBlock.
 
     Args:

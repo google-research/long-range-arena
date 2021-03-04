@@ -54,7 +54,7 @@ def linear_attention(query,
   del dropout_rng
   del dropout_rate
   del deterministic
-  # TODO: figure out how to apply attention dropout!
+  # TODO(dehghani): figure out how to apply attention dropout!
   assert key.ndim == query.ndim == value.ndim == 4
   assert key.shape[:-1] == value.shape[:-1]
   assert (query.shape[0:1] == key.shape[0:1] and

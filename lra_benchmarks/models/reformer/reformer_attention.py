@@ -192,7 +192,7 @@ def lsh_attention_single_head(query, value, n_buckets, n_hashes,
 
   if causal_mask:
     # apply causal mask
-    # TODO: This is not working yet
+    # TODO(yitay): This is not working yet
     # We don't need causal reformer for any task YET.
     pass
 

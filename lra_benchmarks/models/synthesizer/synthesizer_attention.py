@@ -317,7 +317,7 @@ class SynthesizerAttention(nn.Module):
                                           precision=precision,
                                           name='dense_syn',
                                           dtype=dtype)
-      # TODO: Change this to nn.Dense and make sure it works
+      # TODO(yitay): Change this to nn.Dense and make sure it works
       dense_syn_length = nn.linear.DenseGeneral.partial(axis=-1,
                                                         features=(max_length),
                                                         kernel_init=kernel_init,
@@ -329,7 +329,7 @@ class SynthesizerAttention(nn.Module):
       proj = dense_syn(inputs_q, dtype=dtype, name='dense_syn')
       proj = jax.nn.relu(proj)
       proj = dense_syn_length(proj, dtype=dtype, name='dense_syn_len')
-      # TODO check if this reshape is needed
+      # TODO(yitay) check if this reshape is needed
       dense_syn_weights = proj.reshape((inputs_q.shape[0], num_heads,
                                         qlength, max_length))
       dense_syn_weights = dense_syn_weights[:, :, :, :qlength]
@@ -453,6 +453,6 @@ class SynthesizerAttention(nn.Module):
 
     return out
 
-# TODO: Consider refactoring MultiHeadDotProductAttention and moving
+# TODO(flax-dev): Consider refactoring MultiHeadDotProductAttention and moving
 # causal_mask and cache support into this class instead.
 SynthesizerSelfAttention = SynthesizerAttention.partial(inputs_kv=None)

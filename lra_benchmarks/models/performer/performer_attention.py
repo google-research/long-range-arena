@@ -577,7 +577,7 @@ class FastAttentionviaLowRankDecomposition(FastAttention):
 
     # Constructing projection tensor.
     if self.redraw_features:
-      # TODO: Get rid of the constant below.
+      # TODO(kchoro): Get rid of the constant below.
       query_seed = lax.convert_element_type(
           jnp.ceil(jnp.sum(query) * 10000000.0), jnp.int32)
       rng = random.PRNGKey(query_seed)

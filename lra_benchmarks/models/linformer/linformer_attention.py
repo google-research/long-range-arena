@@ -146,7 +146,7 @@ class LinformerAttention(nn.Module):
     if cache:
       raise NotImplementedError('Decoding not supported in Linformer.')
 
-    # TODO Does Linformer care about masks?
+    # TODO(yitay) Does Linformer care about masks?
     # Since everything is mixed in length dimension are masks relevant?
 
     # apply regular dot product attention

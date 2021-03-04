@@ -37,7 +37,7 @@ def sinkhorn_operator(log_alpha, n_iters=1, temp=1.0, clip=1.0, causal=True):
   log_alpha = jnp.reshape(log_alpha, (-1, n, n)) / temp
 
   def causal_logsumexp(log_alpha, axis=-1):
-    # TODO Verify causal sinkhorn ops
+    # TODO(yitay) Verify causal sinkhorn ops
     log_alpha = jnp.exp(jnp.clip(log_alpha, -clip, clip))
     mask = _make_causal_mask(log_alpha)
     mask = jnp.reshape(mask(-1, n, n))
@@ -387,7 +387,7 @@ class SinkhornAttention(nn.Module):
     sorted_mask_components = []
 
     if causal_mask:
-      # TODO: Test this causal masking.
+      # TODO(yitay): Test this causal masking.
       if cache and not self.is_initializing():
         bias_pre_shape = (1,) * (key.ndim - 1)
         attn_shape = tuple(onp.take(key.shape, attention_axis))

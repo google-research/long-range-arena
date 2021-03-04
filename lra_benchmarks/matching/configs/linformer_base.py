@@ -11,16 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Configuration and hyperparameter sweeps."""
 
-from lra_benchmarks.image.configs.cifar10 import base_cifar10_config
+from lra_benchmarks.matching.configs import base_match_config
 
 
 def get_config():
-  """Get the hyperparameter configuration."""
-  config = base_cifar10_config.get_config()
-  config.model_type = "transformer"
+  """Get the default hyperparameter configuration."""
+  config = base_match_config.get_config()
+  config.model_type = "linformer"
   return config
 
 

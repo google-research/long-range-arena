@@ -326,7 +326,7 @@ class LocalAttention(nn.Module):
     mask_components = []
 
     if causal_mask:
-      # TODO: Test this causal masking.
+      # TODO(yitay): Test this causal masking.
       if cache and not self.is_initializing():
         bias_pre_shape = (1,) * (key.ndim - 1)
         attn_shape = tuple(onp.take(key.shape, attention_axis))
