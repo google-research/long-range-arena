@@ -20,9 +20,9 @@ def get_config():
   """Get the default hyperparameter configuration."""
   config = ml_collections.ConfigDict()
   config.batch_size = 32
-  config.eval_frequency = 20
+  config.eval_frequency = 50
   config.num_train_steps = 5000
-  config.num_eval_steps = 20
+  config.num_eval_steps = 99999
   config.learning_rate = 0.05
   config.weight_decay = 1e-1
   config.max_target_length = 200  # ignored
@@ -38,16 +38,15 @@ def get_config():
   config.factors = "constant * linear_warmup * rsqrt_decay"
   config.warmup = 1000
   config.max_length = 2000
-  config.tied_weights = True
+  config.tied_weights = False
 
   config.pooling_mode = "CLS"
-  # config.interaction = "NLI"
 
   config.emb_dim = 512
   config.num_heads = 8
-  config.num_layers = 6
+  config.num_layers = 4
   config.qkv_dim = 512
-  config.mlp_dim = 2048
+  config.mlp_dim = 1024
 
   config.trial = 0  # dummy for repeated runs.
   return config
