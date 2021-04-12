@@ -16,12 +16,18 @@ Arena: A benchmark for Efficient Transformers.
 Currently we have released all the necessary code to get started and run our
 benchmarks on vanilla Transformers.
 
-We are working on a 2nd update that will release more models and baselines for
-this benchmark suite. Stay tuned.
+## V2 release
+
+*Update* We have released the xformer models used in our experiments.
+
+<s> We are working on a 2nd update that will release more models and baselines for
+  this benchmark suite. Stay tuned. </s>
 
 Please see below for more examples on how to get started.
 
-### Leaderboard
+
+
+#### Our experiments
 
 Current leaderboard results of all xformer results on our benchmark results. (as
 of 8th November 2020)
@@ -40,20 +46,30 @@ Longformer      | 35.63     | 62.85     | 56.89     | 42.22     | 69.71     | FA
 Transformer     | 36.37     | 64.27     | 57.46     | 42.44     | 71.40     | FAIL   | 54.39
 BigBird         | 36.05     | 64.02     | 59.29     | 40.83     | 74.87     | FAIL   | **55.01**
 
+### Public External Entries
+
+We list the entries of other papers and submissions that used our LRA benchmark.
+
+
+Model           | ListOps   | Text      | Retrieval | Image     | Path      | Path-X | Avg
+--------------- | --------- | --------- | --------- | --------- | --------- | ------ | ---
+IGLOO           | 39.23	    |  82	      |  75.5	    |  47.0	    | 67.50	    | NA     |  62.25
+
+
+IGLOO Submissions (by Vsevolod Sourkov) - https://github.com/redna11/lra-igloo 
+
 ## Citation
 
 If you find out work useful, please cite our paper at:
 
 ```
 @inproceedings{
-tay2020long,
+tay2021long,
 title={Long Range Arena : A Benchmark for Efficient Transformers },
-author={Yi Tay, Mostafa Dehghani, Samira Abnar, Yikang Shen, Dara Bahri,
-Philip Pham, Jinfeng Rao, Liu Yang, Sebastian Ruder, Donald Metzler},
-booktitle={ArXiv Preprint},
-year={2020},
-url={},
-note={under review}
+author={Yi Tay and Mostafa Dehghani and Samira Abnar and Yikang Shen and Dara Bahri and Philip Pham and Jinfeng Rao and Liu Yang and Sebastian Ruder and Donald Metzler},
+booktitle={International Conference on Learning Representations},
+year={2021},
+url={https://openreview.net/forum?id=qVyeW-grC2k}
 }
 ```
 
@@ -62,9 +78,18 @@ note={under review}
 ## Adding results to the leaderboard.
 
 Please send the link of the paper (arxiv, or published) to the Yi Tay or Mostafa
-Dehghani (emails in paper) to include your new results to the leaderboard.
+Dehghani (emails in paper) to include your new results to the leaderboard. Just
+like above, we will add results to the external submission part of the leaderboard.
+This is so that we do not encourage hill-climbing on the leaderboard but rather
+meaningful side by side comparisons. 
 
 ## A note on evaluation and comparisons
+
+### Meaningful Comparisons
+
+We intend for your benchmark to act as a tool and suite for inspecting model
+behaviour. As such, if you're running a new setup and you have tuned hparams,
+do consider running all the other models.
 
 ### Apples-to Apples setting
 
@@ -91,6 +116,21 @@ If you develop or could benefit from an extensive array of xformer baselines,
 please feel free to let us know if you're interested in building new benchmarks.
 We welcome contributions for new or older models that are not covered in the
 existing suite.
+
+## What if I find a better config for an existing model?
+
+In this paper, we did not prioritize doing hparam sweeps. If you happen to find
+an implementation related issue or a better hparam that allows a model to do
+better on a certain task, do send a PR (or a new config file) and we will
+run the model again internally and report new results for the existing model.
+
+## I have a new Xyzformer, how do we add this to the benchmark.
+
+The official results are *only* for code that have been verified and run in
+our codebase. We report all external submissions as *external*. Either submit a PR,
+an email showing us how to run your model in our codebase and we will update the
+results accordingly. (Note due to bandwidth constraints this process will take
+a substantial amount of time). 
 
 # Example Usage
 
