@@ -172,7 +172,7 @@ def train_sentencepiece(dataset,
       f"--model_prefix={model_fp.name}", f"--model_type={model_type}"
   ])
   SentencePieceTrainer.Train(argstr)
-  if jax.host_id() == 0:
+  if jax.process_index() == 0:
     # Use an intermediate filename that is renamed to the target name to address
     # create and fill delays.
     copy_rename_path = model_path + ".rntmp"

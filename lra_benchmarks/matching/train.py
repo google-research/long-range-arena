@@ -149,7 +149,7 @@ def main(argv):
 
   max_length = config.max_length
 
-  if jax.host_id() == 0:
+  if jax.process_index() == 0:
     summary_writer = tensorboard.SummaryWriter(
         os.path.join(FLAGS.model_dir, 'summary'))
 
@@ -188,7 +188,7 @@ def main(argv):
   }
 
   rng = random.PRNGKey(random_seed)
-  rng = jax.random.fold_in(rng, jax.host_id())
+  rng = jax.random.fold_in(rng, jax.process_index())
   rng, init_rng = random.split(rng)
   # We init the first set of dropout PRNG keys, but update it afterwards inside
   # the main pmap'd training update for performance.
@@ -268,7 +268,7 @@ def main(argv):
     # Save a Checkpoint
     if ((step % config.checkpoint_freq == 0 and step > 0) or
         step == num_train_steps - 1):
-      if jax.host_id() == 0 and config.save_checkpoints:
+      if jax.process_index() == 0 and config.save_checkpoints:
         # Save unreplicated optimizer + model state.
         checkpoints.save_checkpoint(FLAGS.model_dir,
                                     jax_utils.unreplicate(optimizer), step)
@@ -285,7 +285,7 @@ def main(argv):
       summary['perplexity'] = jnp.clip(jnp.exp(summary['loss']), a_max=1.0e4)
       logging.info('train in step: %d, loss: %.4f, acc: %.4f', step,
                    summary['loss'], summary['accuracy'])
-      if jax.host_id() == 0:
+      if jax.process_index() == 0:
         tock = time.time()
         steps_per_sec = eval_freq / (tock - tick)
         tick = tock
@@ -300,7 +300,7 @@ def main(argv):
       eval_summary = run_eval(eval_ds, num_eval_steps)
       logging.info('eval in step: %d, loss: %.4f, acc: %.4f', step,
                    eval_summary['loss'], eval_summary['accuracy'])
-      if jax.host_id() == 0:
+      if jax.process_index() == 0:
         for key, val in eval_summary.items():
           summary_writer.scalar(f'eval_{key}', val, step)
         summary_writer.flush()
@@ -311,7 +311,7 @@ def main(argv):
       test_summary = run_eval(test_ds, num_eval_steps)
       logging.info('test in step: %d, loss: %.4f, acc: %.4f', step,
                    test_summary['loss'], test_summary['accuracy'])
-      if jax.host_id() == 0:
+      if jax.process_index() == 0:
         for key, val in test_summary.items():
           summary_writer.scalar(f'test_{key}', val, step)
         summary_writer.flush()

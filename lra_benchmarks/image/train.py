@@ -177,7 +177,7 @@ def test(optimizer, state, p_eval_step, step, test_ds, summary_writer,
       test_metrics_sums)
   logging.info('test in step: %d, loss: %.4f, acc: %.4f', step,
                test_summary['loss'], test_summary['accuracy'])
-  if jax.host_id() == 0:
+  if jax.process_index() == 0:
     for key, val in test_summary.items():
       summary_writer.scalar(f'test_{key}', val, step)
     summary_writer.flush()
@@ -222,7 +222,7 @@ def train_loop(config, dropout_rngs, eval_ds, eval_freq, num_eval_steps,
     # Save a Checkpoint
     if ((step % config.checkpoint_freq == 0 and step > 0) or
         step == num_train_steps - 1):
-      if jax.host_id() == 0 and config.save_checkpoints:
+      if jax.process_index() == 0 and config.save_checkpoints:
         # Save unreplicated optimizer + model state.
         checkpoints.save_checkpoint(
             FLAGS.model_dir,
@@ -240,7 +240,7 @@ def train_loop(config, dropout_rngs, eval_ds, eval_freq, num_eval_steps,
       # Calculate (clipped) perplexity after averaging log-perplexities:
       logging.info('train in step: %d, loss: %.4f, acc: %.4f', step,
                    summary['loss'], summary['accuracy'])
-      if jax.host_id() == 0:
+      if jax.process_index() == 0:
         tock = time.time()
         steps_per_sec = eval_freq / (tock - tick)
         tick = tock
@@ -274,7 +274,7 @@ def train_loop(config, dropout_rngs, eval_ds, eval_freq, num_eval_steps,
           eval_metrics_sums)
       logging.info('eval in step: %d, loss: %.4f, acc: %.4f', step,
                    eval_summary['loss'], eval_summary['accuracy'])
-      if jax.host_id() == 0:
+      if jax.process_index() == 0:
         for key, val in eval_summary.items():
           summary_writer.scalar(f'val_{key}', val, step)
         summary_writer.flush()
@@ -298,7 +298,7 @@ def main(argv):
   random_seed = config.random_seed
   model_type = config.model_type
 
-  if jax.host_id() == 0:
+  if jax.process_index() == 0:
     summary_writer = tensorboard.SummaryWriter(
         os.path.join(FLAGS.model_dir, 'summary'))
   else:
@@ -343,7 +343,7 @@ def main(argv):
   model_kwargs.update(config.model)
 
   rng = random.PRNGKey(random_seed)
-  rng = jax.random.fold_in(rng, jax.host_id())
+  rng = jax.random.fold_in(rng, jax.process_index())
   rng, init_rng = random.split(rng)
   # We init the first set of dropout PRNG keys, but update it afterwards inside
   # the main pmap'd training update for performance.
