@@ -21,6 +21,12 @@ def get_config():
   """Get the hyperparameter configuration."""
   config = base_cifar10_config.get_config()
   config.model_type = "transformer"
+  config.model.num_layers = 1
+  config.model.classifier_pool = "CLS"
+  config.model.emb_dim = 128
+  config.model.mlp_dim = 128
+  config.model.num_heads = 8
+  config.model.qkv_dim = 64
   return config
 
 
