@@ -4,3 +4,6 @@ ml-collections>=0.1.0
 tensorboard>=2.3.0
 tensorflow>=2.3.1
 tensorflow-datasets>=4.0.1
+tensorflow_text
+gin
+gin-config>=0.1.3
