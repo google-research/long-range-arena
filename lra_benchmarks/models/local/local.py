@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Local Attention Transformer models."""
-from flax import nn
+from flax.deprecated import nn
 import jax.numpy as jnp
 from lra_benchmarks.models.layers import common_layers
 from lra_benchmarks.models.local import local_attention

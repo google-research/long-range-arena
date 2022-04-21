@@ -138,7 +138,7 @@ To run a task, run the train.py file in the corresponding task directory.
 (please see how to obtain the data for certain tasks if applicable).
 
 ```
-PYTHONPATH="$(pwd)":"$PYTHONPATH" python lra_benchmarks/listops/train.py \
+PYTHONPATH="$(pwd)":"$PYTHON_PATH" python lra_benchmarks/listops/train.py \
       --config=lra_benchmarks/listops/configs/transformer_base.py \
       --model_dir=/tmp/listops \
       --task_name=basic \
@@ -164,7 +164,7 @@ If you would like to go to longer/shorter sequence lengths, we also support
 generating your own split, run the following comment:
 
 ```
-PYTHONPATH="$(pwd)":"$PYTHONPATH" python lra_benchmarks/data/listops.py -- \
+PYTHONPATH="$(pwd)":"$PYTHON_PATH" python lra_benchmarks/data/listops.py -- \
   --output_dir=$HOME/lra_data/listops/
 ```
 

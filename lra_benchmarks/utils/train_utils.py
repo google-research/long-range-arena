@@ -13,7 +13,7 @@
 # limitations under the License.
 """This contains utility functions for model training and evaluation."""
 
-from flax import nn
+from flax.deprecated import nn
 from flax.training import common_utils
 import jax.numpy as jnp
 from lra_benchmarks.models.bigbird import bigbird

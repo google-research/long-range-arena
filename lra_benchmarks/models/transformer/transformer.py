@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transformer model."""
-from flax import nn
+from flax.deprecated import nn
 import jax.numpy as jnp
 from lra_benchmarks.models.layers import common_layers
 

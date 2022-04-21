@@ -14,7 +14,7 @@
 """Attention modules for Reformer model."""
 
 from absl import logging
-from flax import nn
+from flax.deprecated import nn
 import jax
 import jax.numpy as jnp
 from jax.scipy.special import logsumexp
@@ -270,7 +270,7 @@ class ReformerAttention(nn.Module):
       key_padding_mask: boolean specifying key-value tokens that are pad token.
       segmentation: segment indices for packed inputs_q data.
       key_segmentation: segment indices for packed inputs_kv data.
-      cache: an instance of `flax.nn.attention.Cache` used for efficient
+      cache: an instance of `flax.deprecated.nn.attention.Cache` used for efficient
         autoregressive decoding.
       broadcast_dropout: bool: use a broadcasted dropout along batch dims.
       dropout_rng: JAX PRNGKey: to be used for dropout
