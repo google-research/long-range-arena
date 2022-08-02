@@ -184,6 +184,21 @@ def main(argv):
       'num_classes': CLASS_MAP[FLAGS.task_name],
       'classifier_pool': config.classifier_pool
   }
+  if config.model_type == 'transformer_tlb':
+    model_kwargs.update({
+        'self_to_cross_ratio_input_updater':
+            config.self_to_cross_ratio_input_updater,
+        'num_cross_layers_input_updater':
+            config.num_cross_layers_input_updater,
+        'num_cross_layers_state_updater':
+            config.num_cross_layers_state_updater,
+        'num_state_tokens':
+            config.num_state_tokens,
+        'block_size':
+            config.block_size,
+        'use_global_pos_encoding':
+            config.use_global_pos_encoding
+    })
 
   rng = random.PRNGKey(random_seed)
   rng = jax.random.fold_in(rng, jax.process_index())
