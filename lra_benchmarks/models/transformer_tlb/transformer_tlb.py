@@ -321,3 +321,96 @@ class StatefulTransformerEncoder(nn.Module):
       encoded = common_layers.classifier_head(
           encoded, num_classes, mlp_dim, pooling_mode='MEAN')
     return encoded
+
+
+class StatefulTransformerDualEncoder(nn.Module):
+  """Stateful Transformer Model Encoder (https://arxiv.org/abs/2205.14794)."""
+
+  def apply(self,
+            inputs1,
+            inputs2,
+            vocab_size,
+            inputs1_positions=None,
+            inputs2_positions=None,
+            inputs1_segmentation=None,
+            inputs2_segmentation=None,
+            shared_embedding=None,
+            use_bfloat16=False,
+            emb_dim=512,
+            num_heads=8,
+            dtype=jnp.float32,
+            num_layers=6,
+            qkv_dim=512,
+            mlp_dim=2048,
+            max_len=512,
+            train=True,
+            dropout_rate=0.1,
+            attention_dropout_rate=0.1,
+            learn_pos_emb=False,
+            classifier=False,
+            classifier_pool='CLS',
+            num_classes=10,
+            tied_weights=False,
+            meta_network=False,
+            meta_layers=1,
+            meta_pool='last',
+            use_residual=True,
+            meta_partition=3,
+            meta_layer_output=False,
+            self_to_cross_ratio_input_updater=2,
+            num_cross_layers_input_updater=1,
+            num_cross_layers_state_updater=1,
+            num_state_tokens=20,
+            block_size=20,
+            use_global_pos_encoding=False,
+            interaction=None):
+    """Applies Transformer model on the inputs."""
+    encoder = StatefulTransformerEncoder.shared(
+        vocab_size=vocab_size,
+        shared_embedding=shared_embedding,
+        use_bfloat16=use_bfloat16,
+        emb_dim=emb_dim,
+        num_heads=num_heads,
+        dtype=dtype,
+        num_layers=num_layers,
+        qkv_dim=qkv_dim,
+        mlp_dim=mlp_dim,
+        max_len=max_len,
+        train=train,
+        dropout_rate=dropout_rate,
+        attention_dropout_rate=attention_dropout_rate,
+        learn_pos_emb=learn_pos_emb,
+        classifier=False,
+        classifier_pool=classifier_pool,
+        num_classes=num_classes,
+        tied_weights=tied_weights,
+        meta_network=meta_network,
+        meta_layers=meta_layers,
+        meta_pool=meta_pool,
+        use_residual=use_residual,
+        meta_partition=meta_partition,
+        meta_layer_output=meta_layer_output,
+        self_to_cross_ratio_input_updater=self_to_cross_ratio_input_updater,
+        num_cross_layers_input_updater=num_cross_layers_input_updater,
+        num_cross_layers_state_updater=num_cross_layers_state_updater,
+        num_state_tokens=num_state_tokens,
+        block_size=block_size,
+        use_global_pos_encoding=use_global_pos_encoding,
+        name='stateful_encoder')
+    inputs1_encoded = encoder(
+        inputs=inputs1,
+        inputs_positions=inputs1_positions,
+        inputs_segmentation=inputs1_segmentation)
+    inputs2_encoded = encoder(
+        inputs=inputs2,
+        inputs_positions=inputs2_positions,
+        inputs_segmentation=inputs2_segmentation)
+
+    encoded = common_layers.classifier_head_dual(
+        inputs1_encoded,
+        inputs2_encoded,
+        num_classes,
+        mlp_dim,
+        pooling_mode='MEAN',
+        interaction=interaction)
+    return encoded

@@ -84,6 +84,9 @@ def get_model(model_type, create_model_fn, model_kwargs, *create_model_args):
   elif model_type == 'transformer_tlb':
     return create_model_fn(transformer_tlb.StatefulTransformerEncoder,
                            model_kwargs, *create_model_args)
+  elif model_type == 'transformer_tlb_dual':
+    return create_model_fn(transformer_tlb.StatefulTransformerDualEncoder,
+                           model_kwargs, *create_model_args)
   else:
     raise ValueError('Model type not supported')
 

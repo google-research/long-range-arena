@@ -11,27 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Configuration and hyperparameter sweeps."""
 
-from lra_benchmarks.text_classification.configs import base_tc_config
-import ml_collections
+from lra_benchmarks.image.configs.cifar10 import base_cifar10_config
 
 
 def get_config():
-  """Get the default hyperparameter configuration."""
-  config = base_tc_config.get_config()
+  """Get the hyperparameter configuration."""
+  config = base_cifar10_config.get_config()
   config.model_type = "transformer_tlb"
-  config.learning_rate = 0.05/2.
-  config.model = ml_collections.ConfigDict()
-  config.model.self_to_cross_ratio_input_updater = 2
+  config.learning_rate = .001
+  config.model.emb_dim = 128
+  config.model.mlp_dim = 128
+  config.model.num_heads = 8
+  config.model.qkv_dim = 64
+  config.model.self_to_cross_ratio_input_updater = 1
   config.model.num_cross_layers_input_updater = 1
   config.model.num_cross_layers_state_updater = 1
-  config.model.num_state_tokens = 10
-  config.model.block_size = 10
+  config.model.num_state_tokens = 5
+  config.model.block_size = 32
   config.model.use_global_pos_encoding = False
-
-  config.max_length = 4000
   return config
 
 

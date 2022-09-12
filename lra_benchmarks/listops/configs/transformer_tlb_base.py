@@ -14,24 +14,22 @@
 
 """Configuration and hyperparameter sweeps."""
 
-from lra_benchmarks.text_classification.configs import base_tc_config
+from lra_benchmarks.listops.configs import base_listops_config
 import ml_collections
 
 
 def get_config():
   """Get the default hyperparameter configuration."""
-  config = base_tc_config.get_config()
+  config = base_listops_config.get_config()
   config.model_type = "transformer_tlb"
-  config.learning_rate = 0.05/2.
   config.model = ml_collections.ConfigDict()
+  config.learning_rate = 0.05 / 4.
   config.model.self_to_cross_ratio_input_updater = 2
   config.model.num_cross_layers_input_updater = 1
   config.model.num_cross_layers_state_updater = 1
-  config.model.num_state_tokens = 10
-  config.model.block_size = 10
+  config.model.num_state_tokens = 100
+  config.model.block_size = 100
   config.model.use_global_pos_encoding = False
-
-  config.max_length = 4000
   return config
 
 

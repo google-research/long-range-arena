@@ -188,6 +188,8 @@ def main(argv):
       'classifier': True,
       'num_classes': 10
   })
+  if 'model' in config:
+    model_kwargs.update(config.model)
 
   rng = random.PRNGKey(random_seed)
   rng = jax.random.fold_in(rng, jax.process_index())
