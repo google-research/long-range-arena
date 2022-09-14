@@ -22,8 +22,8 @@ from absl import app
 from absl import flags
 from absl import logging
 from flax import jax_utils
-from flax import nn
 from flax import optim
+from flax.deprecated import nn
 from flax.metrics import tensorboard
 from flax.training import checkpoints
 from flax.training import common_utils
@@ -186,6 +186,8 @@ def main(argv):
       'num_classes': 2,
       'classifier_pool': config.pooling_mode
   }
+  if 'model' in config:
+    model_kwargs.update(config.model)
 
   rng = random.PRNGKey(random_seed)
   rng = jax.random.fold_in(rng, jax.process_index())
@@ -195,7 +197,7 @@ def main(argv):
   dropout_rngs = random.split(rng, jax.local_device_count())
 
   model = train_utils.get_model(model_type, create_model, model_kwargs,
-                                init_rng, input_shape)
+                                init_rng, input_shape, input_shape)
 
   optimizer = create_optimizer(
       model, learning_rate, weight_decay=FLAGS.config.weight_decay)

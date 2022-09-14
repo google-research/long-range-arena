@@ -17,12 +17,12 @@ from collections.abc import Iterable  # pylint: disable=g-importing-member
 
 from absl import logging
 
-from flax import nn
-from flax.nn.attention import _CacheEntry
-from flax.nn.attention import _make_causal_mask
-from flax.nn.attention import Cache
-from flax.nn.attention import make_padding_mask
-from flax.nn.stochastic import make_rng
+from flax.deprecated import nn
+from flax.deprecated.nn.attention import _CacheEntry
+from flax.deprecated.nn.attention import _make_causal_mask
+from flax.deprecated.nn.attention import Cache
+from flax.deprecated.nn.attention import make_padding_mask
+from flax.deprecated.nn.stochastic import make_rng
 import jax
 from jax import lax
 from jax import random
@@ -225,7 +225,7 @@ class SynthesizerAttention(nn.Module):
       key_padding_mask: boolean specifying key-value tokens that are pad token.
       segmentation: segment indices for packed inputs_q data.
       key_segmentation: segment indices for packed inputs_kv data.
-      cache: an instance of `flax.nn.attention.Cache` used for efficient
+      cache: an instance of `flax.deprecated.nn.attention.Cache` used for efficient
         autoregressive decoding.
       broadcast_dropout: bool: use a broadcasted dropout along batch dims.
       dropout_rng: JAX PRNGKey: to be used for dropout

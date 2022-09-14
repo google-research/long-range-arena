@@ -24,8 +24,8 @@ from absl import app
 from absl import flags
 from absl import logging
 from flax import jax_utils
-from flax import nn
 from flax import optim
+from flax.deprecated import nn
 from flax.metrics import tensorboard
 from flax.training import checkpoints
 from flax.training import common_utils

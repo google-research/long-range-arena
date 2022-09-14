@@ -22,8 +22,8 @@ from absl import app
 from absl import flags
 from absl import logging
 from flax import jax_utils
-from flax import nn
 from flax import optim
+from flax.deprecated import nn
 from flax.metrics import tensorboard
 from flax.training import checkpoints
 from flax.training import common_utils
@@ -184,6 +184,8 @@ def main(argv):
       'num_classes': CLASS_MAP[FLAGS.task_name],
       'classifier_pool': config.classifier_pool
   }
+  if 'model' in config:
+    model_kwargs.update(config.model)
 
   rng = random.PRNGKey(random_seed)
   rng = jax.random.fold_in(rng, jax.process_index())

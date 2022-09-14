@@ -13,7 +13,7 @@
 # limitations under the License.
 """This contains utility functions for model training and evaluation."""
 
-from flax import nn
+from flax.deprecated import nn
 from flax.training import common_utils
 import jax.numpy as jnp
 from lra_benchmarks.models.bigbird import bigbird
@@ -28,6 +28,7 @@ from lra_benchmarks.models.sparse_transformer import sparse_attention
 from lra_benchmarks.models.sparse_transformer import sparse_transformer
 from lra_benchmarks.models.synthesizer import synthesizer
 from lra_benchmarks.models.transformer import transformer
+from lra_benchmarks.models.transformer_tlb import transformer_tlb
 import numpy as onp
 
 
@@ -80,6 +81,12 @@ def get_model(model_type, create_model_fn, model_kwargs, *create_model_args):
   elif model_type == 'longformer':
     return create_model_fn(longformer.LongformerEncoder, model_kwargs,
                            *create_model_args)
+  elif model_type == 'transformer_tlb':
+    return create_model_fn(transformer_tlb.StatefulTransformerEncoder,
+                           model_kwargs, *create_model_args)
+  elif model_type == 'transformer_tlb_dual':
+    return create_model_fn(transformer_tlb.StatefulTransformerDualEncoder,
+                           model_kwargs, *create_model_args)
   else:
     raise ValueError('Model type not supported')
 
