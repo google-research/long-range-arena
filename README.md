@@ -54,9 +54,11 @@ We list the entries of other papers and submissions that used our LRA benchmark.
 Model           | ListOps   | Text      | Retrieval | Image     | Path      | Path-X | Avg
 --------------- | --------- | --------- | --------- | --------- | --------- | ------ | ---
 IGLOO           | 39.23	    |  82	      |  75.5	    |  47.0	    | 67.50	    | NA     |  62.25
+TLB             | 37.05     |  81.88    |  76.91    |  57.51    | 79.06     | FAIL   |  66.48
 
 
-IGLOO Submissions (by Vsevolod Sourkov) - https://github.com/redna11/lra-igloo 
+IGLOO Submissions (by Vsevolod Sourkov) - https://github.com/redna11/lra-igloo \
+TLB ([Temporal Latent Bottleneck](lra_benchmarks/models/transformer_tlb)) - [transformer_tlb](lra_benchmarks/models/transformer_tlb) 
 
 ## Citation
 
