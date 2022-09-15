@@ -198,6 +198,18 @@ about the parameters used for generatinng the data in the TFDS builder code in
 `./data/pathfinder`. We are preparing the exact data splits for release at the
 moment.
 
+You can download the data packaged for TFDS [here](https://storage.googleapis.com/long-range-arena/pathfinder_tfds.gz).
+Once you've unzipped and untared the `.gz` file, you will obtain a folder named `TFDS`. To do so, run the following from the folder
+containing the `.gz` file.
+
+```
+gzip -d pathfinder_tfds.gz
+tar -xf pathfinder_tfds
+```
+
+You can load the data by pointing
+`_PATHFINER_TFDS_PATH` to the folder path in the `lra_benchmarks.image.input_pipeline.py` file.
+
 ## Disclaimer
 
 This is not an official Google product.
