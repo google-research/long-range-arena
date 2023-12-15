@@ -13,7 +13,7 @@
 # limitations under the License.
 """Configuration and hyperparameter sweeps."""
 
-from lra_benchmarks.retrieval.configs import base_match_config
+from lra_benchmarks.matching.configs import base_match_config
 
 
 def get_config():
