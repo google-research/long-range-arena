@@ -1,3 +1,4 @@
+# based on https://github.com/state-spaces/s4/blob/main/src/dataloaders/README.md
 set -e;
 mkdir lra_data;
 cd lra_data;
