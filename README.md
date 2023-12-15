@@ -18,6 +18,7 @@ Long-range arena implements different variants of Transformers using
 We recommend installing the python dependencies using a virtual environment such as venv, pipenv, or miniconda.
 After the virtual environment is activated, install pip3, then run: 
 ```
+pip3 install --upgrade pip;
 pip3 install -e . \
     -f https://storage.googleapis.com/jax-releases/jax_releases.html 
 ```

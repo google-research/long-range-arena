@@ -24,17 +24,9 @@ setup(
         "tensorboard>=2.3.0",
         "tensorflow>=2.3.1",
         "tensorflow-datasets==4.8.3",
-        "tensorflow-hub",
-        "tensorflow-text",
+        "tensorflow-hub==0.15.0",
+        "tensorflow-text==2.7.3",
         "gin-config==0.5.0",
         "attrs==23.1.0",
     ],
-    extras_require={
-        "mac": [
-            "tensorflow-datasets==4.8.3",
-        ],
-        "colab": [
-            "tensorflow-datasets>=4.8.3",
-        ]
-    }
 )
