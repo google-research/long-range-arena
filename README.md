@@ -51,5 +51,5 @@ python3 lra_benchmarks/listops/train.py \
       --task_name=basic \
       --data_dir=./lra_data/listops/ \
       --config.checkpoint_freq=100 \
-      --config.num_eval_steps=100 
+      --config.eval_freq=100
 ```
