@@ -22,10 +22,10 @@ pip3 install --upgrade pip;
 
 ### CPU
 pip3 install -e . \
-    -f https://storage.googleapis.com/jax-releases/jax_releases.html
+    -f https://storage.googleapis.com/jax-releases/jax_releases.html;
 
 ### TPU
-pip3 install -e . \
+pip3 install -e '.[tpu]' \
     -f https://storage.googleapis.com/jax-releases/jax_releases.html \
     -f https://storage.googleapis.com/jax-releases/libtpu_releases.html;
 ```
