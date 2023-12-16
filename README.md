@@ -1,6 +1,7 @@
 # Long-Range Arena
 
-Repairing the LRA repo... A work in progress.
+Working fork of LRA with pinned dependencies and scripted dataset preparation.  
+Source code is identical to original repo.  
 
 ## Description
 
