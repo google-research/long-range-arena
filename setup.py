@@ -17,8 +17,8 @@ setup(
     platforms="any",
     python_requires=">=3.8",
     install_requires=[
-        "jax==0.3.0",
-        "jaxlib==0.3.0",
+        "jax==0.2.4",
+        "jaxlib==0.1.56",
         "flax>=0.2.8,<=0.3.6",
         "ml-collections>=0.1.0",
         "tensorboard>=2.3.0",

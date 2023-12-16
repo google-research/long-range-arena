@@ -19,9 +19,17 @@ We recommend installing the python dependencies using a virtual environment such
 After the virtual environment is activated, install pip3, then run: 
 ```
 pip3 install --upgrade pip;
+
+### CPU
 pip3 install -e . \
-    -f https://storage.googleapis.com/jax-releases/jax_releases.html 
+    -f https://storage.googleapis.com/jax-releases/jax_releases.html
+
+### TPU
+pip3 install -e . \
+    -f https://storage.googleapis.com/jax-releases/jax_releases.html \
+    -f https://storage.googleapis.com/jax-releases/libtpu_releases.html;
 ```
+
 
 ## Dataset Setup
 
